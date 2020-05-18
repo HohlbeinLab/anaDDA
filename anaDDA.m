@@ -1,5 +1,4 @@
 function [parameters,bootstrapparamstd,KSSTAT] = anaDDA(input,inputdata)
-%%JH_testBranch!!
 %% Basic starting function for anaDDA
 % anaDDA requires an input of parameters and data. This function is there
 % to supply this set of parameters and data in different ways. 
@@ -169,7 +168,12 @@ else
 end
 
 fileid = fopen(savefilename,'a');
+if exist('tracksPathname')
 fprintf(fileid','%s\n\n',['Output file of anaDDA run on ' tracksfilename]);
+else
+fprintf(fileid','%s\n\n','Output file of anaDDA run on inputdata');   
+end
+
 fprintf(fileid','%s\n', 'Parameters and bootstrap std values for each species');
 
 fprintf(fileid','%s\t%s\t%s\t%s\n',[string('fraction'),string('koff'),string('kon'),string('Dfree')]);
@@ -190,5 +194,3 @@ if input.KSstats == true
 end
 fclose(fileid);
 save([savefilename(1:end-4) '_inputfile'],'input')
-profile off
-profile viewer
