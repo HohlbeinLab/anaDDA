@@ -76,7 +76,7 @@ x = rangeDStracy';
 % pdfarray = (1./sqrt(Dx)).*(1./sqrt(Dy)).*exp((-(1./Dx)-(1./Dy)).*x/2).*besseli0_fast(((1./Dx)-(1./Dy)).*x/2)*(x(2)-x(1));
 % pdfarray = single(pdfarray);
 % pdfarray = gpuArray(pdfarray);
-
+warning('off','MATLAB:polyfit:RepeatedPointsOrRescale')
 fx = polyfit(rangeDPDA(2:end)',Dx(2:end)',9);
 fy = polyfit(rangeDPDA(2:end)',Dy(2:end)',9);
 % fx = fit(rangeDPDA(2:end)',Dx(2:end)','poly9');

@@ -112,14 +112,19 @@ else
 end
 
 %% Pre-calculation of distributions for localization error (to speed up later fitting)
-for j = 1:numel(input.frametimerange)
-maxDfree = input.upperDfree+input.sigmaerror^2/min(input.frametimerange(j));
+maxDfree = input.upperDfree+input.sigmaerror^2/min(input.frametimerange);
 maxrangeD =-log(maxDfree*1e-10)*maxDfree;
 rangeD =maxrangeD/(input.precision*2):maxrangeD/input.precision:maxrangeD;
 
+if ~isfield(input,'dist')
+for j = 1:numel(input.frametimerange)
+%maxDfree = input.upperDfree+input.sigmaerror^2/min(input.frametimerange(j));
+%maxrangeD =-log(maxDfree*1e-10)*maxDfree;
+%rangeD =maxrangeD/(input.precision*2):maxrangeD/input.precision:maxrangeD;
 locerror = input.sigmaerror.^2/input.frametimerange(j);
 input.frametime = input.frametimerange(j);
 [input.dist(j).locerrorpdf,input.dist(j).locerrorpdfcorrected] = makelocerrordistributions(rangeD,locerror,input);
+end
 end
 
 %% Fitting of data with MLE and bootstrapping

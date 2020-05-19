@@ -21,7 +21,7 @@ Dfree_B = input.Dfree_B;
 
 sigmaerror = input.sigmaerror;
 sigmasigma = 0;
-immobilefraction = input.immobilefraction;% Set what percentage of signal is immobile
+%immobilefraction = input.immobilefraction;% Set what percentage of signal is immobile
 
 koff1_A = koff1_A*Steptime;
 kon1_A = kon1_A*Steptime;
@@ -32,7 +32,7 @@ koff1_B = koff1_B*Steptime;
 kon1_B = kon1_B*Steptime;
 koff2_B = koff2_B*Steptime;
 kon2_B = kon2_B*Steptime;
-
+confinement = input.confinement;
 NFrames = input.NumberofFrames;   % Number of frames
 Dim_A1 = 1e-19; %has to be different value from Dim_A1, therefore very low
 Dim_A2 = 1e-20; % has to be different value from Dim_A2, therefore very low
@@ -89,25 +89,29 @@ Poslist = zeros(Nparticles*(NFrames+1),3);
 startpos=zeros(Nparticles,3);
 sumcont = sum(cont(:));
 %% Give each particle a starting position
-while sumcont > 0
- startpos(cont,1)=xdimcell*rand(sumcont, 1,'single');
-  startpos(cont,2:3,1) = (rand(sumcont,2,'single')-0.5)*(radiusofcell*2);
-  squared = startpos(cont,2).^2 + startpos(cont,3).^2;
-  capcond1 = ...
-         ...
-        ((startpos(cont,1) < radiusofcell) .*...
-        (startpos(cont,1)-radiusofcell).^2 +squared <radiusofcell^2);
-capcond2 = ...
-         ...
-        ((startpos(cont,1) >= radiusofcell) .*...    
-        (startpos(cont,1)>(xdimcell-radiusofcell)) .* ...
-         (startpos(cont,1)-(xdimcell-radiusofcell)).^2 + squared <radiusofcell^2);
-capcond = capcond1 & capcond2;
-particlesincell(cont,1) = startpos(cont,1)>0 & (startpos(cont,1)<xdimcell) & (squared<radiusofcell^2) & capcond;%.*running_particles;
-cont(cont,1) = cont(cont,1)-particlesincell(cont,1);
-sumcont = sum(cont);
-end
+if confinement == 1
+    while sumcont > 0
 
+        startpos(cont,1)=xdimcell*rand(sumcont, 1,'single');
+      startpos(cont,2:3,1) = (rand(sumcont,2,'single')-0.5)*(radiusofcell*2);
+      squared = startpos(cont,2).^2 + startpos(cont,3).^2;
+      capcond1 = ...
+             ...
+            ((startpos(cont,1) < radiusofcell) .*...
+            (startpos(cont,1)-radiusofcell).^2 +squared <radiusofcell^2);
+    capcond2 = ...
+             ...
+            ((startpos(cont,1) >= radiusofcell) .*...    
+            (startpos(cont,1)>(xdimcell-radiusofcell)) .* ...
+             (startpos(cont,1)-(xdimcell-radiusofcell)).^2 + squared <radiusofcell^2);
+    capcond = capcond1 & capcond2;
+    particlesincell(cont,1) = startpos(cont,1)>0 & (startpos(cont,1)<xdimcell) & (squared<radiusofcell^2) & capcond;%.*running_particles;
+    cont(cont,1) = cont(cont,1)-particlesincell(cont,1);
+    sumcont = sum(cont);
+    end
+else
+     startpos(cont,1:3)=rand(sumcont, 3,'single');
+end
 %% Give each particle a starting Diffusion coefficient value
 startD = rand(Nparticles,1);
 D(1:Nparticles,1)= Dim_A2;
@@ -214,7 +218,7 @@ end
 %get the new position 
 %newpos(running_particles ==1,:) = startpos(running_particles ==1,:)+dxyz(running_particles ==1,:);
 %newpos = [];
-
+if confinement == 1
 %Check if the molecules are inside the cell
 squared = newpos(:,2).^2 + newpos(:,3).^2;
 % capcond == 1 is necessary for continuation
@@ -231,7 +235,9 @@ capcond2 = ...
 capcond = capcond1 & capcond2;     
 %now check all particles that are in the cell at the end of the step
 particlesincell = newpos(:,1)>0 & (newpos(:,1)<xdimcell) & (squared<radiusofcell^2) & capcond;%.*running_particles;
-
+else
+particlesincell = ones(numel(running_particles),1);
+end
 if sumrun == Nparticles
 newpos(~particlesincell,:) = startpos(~particlesincell,:);
 startpos = newpos;
@@ -287,10 +293,6 @@ end
 end
 %% Add localization error + add recorded times depending on density of localizations
 Possize = size(Poslist);
-% Adds autofluorescence if needed
-if autofluorescence == 1
- Poslist(1:round(immobilefraction*Possize(1)),:)=0;
-end
 % Can add localizationerror but also can have a certain distribution of
 % brightness (localization error) for each particle (sigmasigma). 
 sigmaerror = abs(normrnd(sigmaerror,sigmasigma,Nparticles,1));
