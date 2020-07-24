@@ -111,6 +111,8 @@ else
     input.frametimerange = unique(D(3,:));
 end
 
+%% Edit input.framerange in case not all 1-to-8 are provided
+input.framerange = unique(D(2,:));
 %% Pre-calculation of distributions for localization error (to speed up later fitting)
 maxDfree = input.upperDfree+input.sigmaerror^2/min(input.frametimerange);
 maxrangeD =-log(maxDfree*1e-10)*maxDfree;
