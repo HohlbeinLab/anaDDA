@@ -13,7 +13,7 @@ input.radiusofcell = 0.5;                                       % The radius of 
 input.lengthcell = 3;                                           % The length of the spherical/rod-shaped cells/boundaries used for both fitting and simulations (um)
 input.compensatetracking = true;                                % Whether tracking windows are taken in account in fitting data
 input.trackingwindow = 300;                                     % length of tracking window (um)
-input.fixedparameters = [1 -1 -1 -1; -1 -1 -1 -1;-1 -1 -1 -1];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon and Dfree. -1 if not fixed(Default: [1 -1 -1 -1; -1 -1 -1 -1;-1 -1 -1 -1];)
+input.fixedparameters = [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
 
 %% Advanced fitting parameters
 input.bootstrapping = true;                                     % If you want to include bootstrapping for std dev estimations
@@ -35,6 +35,9 @@ input.koff2_A = 10e9;                                           % second off rat
 input.kon1_A = 30;                                              % first on rate for species one (s-1)
 input.kon2_A = 0.0001;                                          % second off rate for species one (if no second on rate 0.0001/much lower than first on rate)
 input.Dfree_A = 1;                                              % free diffusion coefficient for species one (um2/s)
+input.D1_A = 0;                                                 % diffusion coefficient of slow state for species one (um2/s; zero if immobile state)
+
+
 
 input.fractionB = 0;                                            % first off rate for species one (s-1)
 input.koff1_B = 30;                                             % first off rate for species two (s-1)
@@ -42,13 +45,15 @@ input.koff2_B = 10e9;                                           % second off rat
 input.kon1_B = 30;                                              % first on rate for species two (s-1)
 input.kon2_B = 0.0001;                                          % second on rate for species two (s-1)
 input.Dfree_B= 4.5;                                             % free diffusion coefficient for species two (um2/s)
+input.D1_B = 0;                                                 % diffusion coefficient of slow state for species two (um2/s; zero if immobile state)
 input.Nparticles = 50000;                                       % Number of particles (tracks) run in the simulation
 input.distributionNparticles = [0.28723 0.20581 0.14747 0.10567 0.07572 0.05425 0.03887 0.08496]; % Distribution of track lengths for each length ranging from 1 to 8 steps
 input.framerange = [1 2 3 4 5 6 7 8];                           % Which track lengths are simulated (number of steps)
 input.pixelsize = 1;
 input.Steptime = 0.00001;                                       % step time of simulation (s) 
 input.frametimerange = 0.01;                                    % Range of frame times for which particles are simulated (s)
-
+input.density = 0;                                              % Used to simulate tracking errors. This parameter determines how many particles on average are present at a given time point. For density combine with below parameter. If 0, than no tracking errors. 
+input.fovsize = 40;                                             % Size of FOV (length of square). Density of particles can be calculated by input.density/(input.fovsize^2). Only important if input.density>0.
 % %IDEA FOR LATER: Can be easily expanded for the simulation!
 % ii = 1;
 % input.Species(ii).fracttion = 1; 

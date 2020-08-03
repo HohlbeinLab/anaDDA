@@ -15,8 +15,8 @@ else
 end
 %% Generate fixed distributions
 for i = 1:numberofspecies
-if sum(fixedparameters(i,2:4)>-1) == 3
-    Dfixed(i,j).dist = DDistributiongenerator(fixedparameters(i,2),fixedparameters(i,3),fixedparameters(i,4),rangeD,input.dist(j).locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,j)';
+if sum(fixedparameters(i,2:5)>-1) == 4
+    Dfixed(i,j).dist = DDistributiongenerator(fixedparameters(i,2),fixedparameters(i,3),fixedparameters(i,4),fixedparameters(i,5),rangeD,input.dist(j).locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,j)';
     %Dfixed(i).dist = Dfixed(i,:)./(sum(Dfixed(i,:)));
     numberoffixedspecies = numberoffixedspecies + 1;
     fixedspecies(numberoffixedspecies) = i;

@@ -28,8 +28,9 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
         '(3) What is the estimated localization error in your measurement (µm)?',...
         '(4) Are there any (spherical/rod-shaped) confinement boundaries (y/n)?',...
         '(5) Are there any maximum tracking windows applied (y/n)?',...
-        '(6) Do you want to fix any parameters in the fit (y/n)?'},...
-        'Input parameters', 1, {'1','10','0.03','n','n','n'}, opts);
+        '(6) Is one of the transitioning states immobile (y/n)?',...
+        '(7) Do you want to fix any parameters in the fit (y/n)?'},...
+        'Input parameters', 1, {'1','10','0.03','n','n','y','n'}, opts);
     input.numberofspecies = str2num(answers{1});
     input.upperDfree = str2num(answers{2});
     input.sigmaerror = str2num(answers{3});
@@ -58,18 +59,34 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
         input.trackingwindow = 3000; %careful: hard-coded number
     end
     if answers{6} == 'y'
-        for i = 1:input.numberofspecies
-            answerfixspecies1 = inputdlg(['Confinment parameters species ' num2str(i) ...
-                ' (fraction koff (s^-1) kon (s^-1) Dfree (µm^2/s)); (-1 if not fixed)?'] ,...
-                ['Input fixed parameters species ' num2str(i)],1,{'-1 20 20 4'});
-            input.fixedparameters(i,:) = str2num(answerfixspecies1{1});
-            if input.fixedparameters(i,4) == 0
-                input.fixedparameters(i,2) = 0.00001;
-                input.fixedparameters(i,3) = 100000;
-                input.fixedparameters(i,4) = 1;
+        input.fixedparameters(:,5) = 0;
+        twomobilestates = 0;
+    else
+        twomobilestates = 1;
+    end
+    if answers{7} == 'y'
+        if twomobilestates == 0
+            for i = 1:input.numberofspecies
+                answerfixspecies1 = inputdlg(['Confinment parameters species ' num2str(i) ...
+                    ' (fraction koff (s^-1) kon (s^-1) Dfree (µm^2/s)); (-1 if not fixed)?'] ,...
+                    ['Input fixed parameters species ' num2str(i)],1,{'-1 20 20 4'});
+                input.fixedparameters(i,:) = str2num(answerfixspecies1{1});
+                if input.fixedparameters(i,4) == 0
+                    input.fixedparameters(i,2) = 0.00001;
+                    input.fixedparameters(i,3) = 100000;
+                    input.fixedparameters(i,4) = 1;
+                end
+                
             end
-            
-        end
+        else
+            for i = 1:input.numberofspecies
+                answerfixspecies1 = inputdlg(['Confinment parameters species ' num2str(i) ...
+                    ' (fraction koff (s^-1) kon (s^-1) D1 (µm^2/s) D2 (µm^2/s)); (-1 if not fixed)?'] ,...
+                    ['Input fixed parameters species ' num2str(i)],1,{'-1 20 20 0.5 4'});
+                input.fixedparameters(i,:) = str2num(answerfixspecies1{1});
+                
+            end
+        end    
     else
         input.fixedparameters(:) = -1;
     end
@@ -110,9 +127,8 @@ else
     D = inputdata';
     input.frametimerange = unique(D(3,:));
 end
-
-%% Edit input.framerange in case not all 1-to-8 are provided
-input.framerange = unique(D(2,:));
+%% Edit input.framerange in case not all 1-to-8 are provided (D from tracks longer than 8 are not used in further fitting).
+input.framerange = unique(min(D(2,:),8));
 %% Pre-calculation of distributions for localization error (to speed up later fitting)
 maxDfree = input.upperDfree+input.sigmaerror^2/min(input.frametimerange);
 maxrangeD =-log(maxDfree*1e-10)*maxDfree;
@@ -183,18 +199,28 @@ end
 
 fprintf(fileid','%s\n', 'Parameters and bootstrap std values for each species');
 
-fprintf(fileid','%s\t%s\t%s\t%s\n',[string('fraction'),string('koff'),string('kon'),string('Dfree')]);
-for i = 1:input.numberofspecies
-    fprintf(fileid, '%s\n', '----------------------------------------');
-    fprintf(fileid','%s\t%s\t%s\t%s\n',string(parameters(i,:)));
-    fprintf(fileid','%s\t%s\t%s\t%s\n',string(bootstrapparamstd(i,:)));
-    fprintf(fileid, '%s\n', '----------------------------------------');
+if sum(parameters(1:input.numberofspecies,5)) == 0
+    fprintf(fileid','%s\t%s\t%s\t%s\n',[string('fraction'),string('koff'),string('kon'),string('Dfree')]);
+    for i = 1:input.numberofspecies
+        fprintf(fileid, '%s\n', '----------------------------------------');
+        fprintf(fileid','%s\t%s\t%s\t%s\n',string(parameters(i,1:4)));
+        fprintf(fileid','%s\t%s\t%s\t%s\n',string(bootstrapparamstd(i,1:4)));
+        fprintf(fileid, '%s\n', '----------------------------------------');
+    end
+else
+        fprintf(fileid','%s\t%s\t%s\t%s\n',[string('fraction'),string('koff'),string('kon'),string('D1'),string('D2')]);
+    for i = 1:input.numberofspecies
+        fprintf(fileid, '%s\n', '----------------------------------------');
+        fprintf(fileid','%s\t%s\t%s\t%s\n',string(parameters(i,:)));
+        fprintf(fileid','%s\t%s\t%s\t%s\n',string(bootstrapparamstd(i,:)));
+        fprintf(fileid, '%s\n', '----------------------------------------');
+    end
 end
 if input.KSstats == true
     fprintf(fileid, '\n%s\n','KSSTATS for the different plots:');
     for i = 1:numel(input.frametimerange)
         for j = input.framerange
-            fprintf(fileid, '%s\n',['frametime: ' num2str(input.frametimerange(i)) ' s; track length: ' num2str(input.framerange(j)) ' steps']);
+            fprintf(fileid, '%s\n',['frametime: ' num2str(input.frametimerange(i)) ' s; track length: ' num2str(j) ' steps']);
             fprintf(fileid, '%s\n',['KSSTAT: ' num2str(KSSTAT(i,j))]);
         end
     end

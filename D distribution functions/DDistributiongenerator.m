@@ -1,4 +1,4 @@
-function [framescombined] = DDistributiongenerator(koff,kon,Dfree,rangeD,locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,indexframetimerange)
+function [framescombined] = DDistributiongenerator(koff,kon,Dfree,D1,rangeD,locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,indexframetimerange)
 %Probability to start in State 1
  probS1 = kon/(koff+kon);
  %Probability to start in State 2
@@ -24,7 +24,7 @@ if input.confinement == 1
     %func = @(t1) Integralconfined(t1,Dfree,koff,kon,fx,fy,x,polyfunc);
     pdfarray = integral(func,0,1,'ArrayValued',true);
 else
-    func = @(t1) Integral(t1,Dfree,koff,kon,x,locerror);
+    func = @(t1) Integral(t1,Dfree,D1,koff,kon,x,locerror);
     pdfarray = integral(func,0,1,'ArrayValued',true);  
 end
 % if input.confinement == 1
@@ -39,7 +39,7 @@ end
 pdfarray = pdfarray.*(rangeD(2)-rangeD(1));
 pdfarray = interp1(pdfarray,1:(1/interpolnumber):length(pdfarray),'spline');
 
-pdfarray(:,2) = pdfarray(:,2)+probstationary.*1/(locerror)*exp(-rangeD(1:length(pdfarray))'./(locerror)).*(rangeD(2)-rangeD(1));
+pdfarray(:,2) = pdfarray(:,2)+probstationary.*1/(D1+locerror)*exp(-rangeD(1:length(pdfarray))'./(D1+locerror)).*(rangeD(2)-rangeD(1));
 %pdfarray(:,2) = pdfarray(:,2) + probstationary.*normpdf(rangeD(1:length(pdfarray)),0,2*locerror).*(rangeD(2)-rangeD(1));
 
 if input.confinement == 1
@@ -200,8 +200,11 @@ allframes(:,8) = fftframescombined(1:maxindex);
 %% Localization error is slightly differently distributed. This takes this into account by changing distribution 
 framerange = 1:8; 
 probstationary = probS1*(exp(-koff*framerange*frametime));
-allframes = allframes +probstationary.*locerrorpdfcorrected(1:maxindex,:);
-%allframes = allframes +probstationary.*locerrorpdfcorrected(1:maxindex,:);            %- probstationary*locerrorpdf;
+%allframes = allframes +probstationary.*locerrorpdfcorrected(1:maxindex,:);
+
+if D1 == 0
+allframes = allframes +probstationary.*locerrorpdfcorrected(1:maxindex,:);            %- probstationary*locerrorpdf;
+end
 
 framescombined = allframes;    
 
@@ -219,9 +222,9 @@ I(:,3) = w*C;
 %I = w * func(t1); % Approximately evaluate the integral
 
 
-function [output] = Integral(t1,Dfree,koff,kon,x,locerror)%,Dfree,koff,kon,fx,fy,x)
-dist= 1/(t1.*Dfree+locerror)*exp(-x./(t1.*Dfree+locerror));
-dist2= 1/((1-t1).*Dfree+locerror)*exp(-x./((1-t1).*Dfree+locerror));
+function [output] = Integral(t1,Dfree,D1,koff,kon,x,locerror)%,Dfree,koff,kon,fx,fy,x)
+dist= 1/(t1.*Dfree+(1-t1).*D1+locerror)*exp(-x./(t1.*Dfree+(1-t1).*D1+locerror));
+dist2= 1/((1-t1).*Dfree+t1.*D1+locerror)*exp(-x./((1-t1).*Dfree+t1.*D1+locerror));
 evenconstant = sqrt(koff*kon.*(1-t1)./(t1)).*besseli(1,2*sqrt(kon*koff.*t1.*(1-t1)));
 
 output = dist.*kon.*exp(-kon.*t1-koff.*(1-t1)).*besseli(0,2*sqrt(kon*koff*t1*(1-t1)));
