@@ -18,15 +18,16 @@ fixedparameterstemp = fixedparameters(1:numberofspecies,:);
 % else 
 % end
 
-startparameters = [0.3 50 30 1;0.3 1 1 1; 0.3 1 1 1]; 
+startparameters = [0.3 50 30 4 1;0.3 1 1 4 1; 0.3 1 1 4 1]; 
 indexfittingparameters = fixedparameterstemp==-1;
-indexfittingparameters = [indexfittingparameters; zeros(3-numberofspecies,4)];
+indexfittingparameters = [indexfittingparameters; zeros(3-numberofspecies,5)];
 indexfittingparameters = logical(indexfittingparameters);
 
 startparam = startparameters(indexfittingparameters);
 lowerbound = zeros(length(startparam),1)+0.000001;
-upperbound = [ones(sum(fixedparameterstemp(:,1)==-1),1) ;input.upperstartkon*input.upperstartkoff*ones(sum(sum(indexfittingparameters(:,2:3)==1)),1);10*ones(sum(indexfittingparameters(:,4)==1),1)];
-
+%lowerbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);-3*ones(sum(indexfittingparameters(:,2)==1),1);0.01*ones(sum(indexfittingparameters(:,3)==1),1);zeros(sum(indexfittingparameters(:,4)==1),1)+0.000001;zeros(sum(indexfittingparameters(:,5)==1),1)+0.000001];
+upperbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);input.upperstartkon*input.upperstartkoff*ones(sum(sum(indexfittingparameters(:,2:3)==1)),1);input.upperDfree*ones(sum(indexfittingparameters(:,4)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,5)==1),1)];
+%upperbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);3*ones(sum(indexfittingparameters(:,2)==1),1);100*ones(sum(indexfittingparameters(:,3)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,4)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,5)==1),1)];
 Frametimelist = Dlistdata(3,:);
 Numberofframes = Dlistdata(2,:);
 Dlistdata = Dlistdata(1,:);
@@ -76,9 +77,11 @@ while pass == 0
     disp(['Running fitting cycle ' num2str(i) ' of at least ' num2str(mincyclenumber)])
     for j = 1:3
     koffstart(j) = 10^((log10(upperstartkoff)-log10(lowerstartkoff))*rand()+log10(lowerstartkoff));
+    %koffstart(j) = -3 + 6*rand();
     konstart(j) = (upperstartkon-lowerstartkon)*rand+lowerstartkon;
+    konstart(j) = 10^(-1 + 2*rand());
     end
-    startparameters = [rand koffstart(1) konstart(1)*koffstart(1) maxDfree*rand;rand koffstart(2) konstart(2)*koffstart(2) maxDfree*rand; rand koffstart(3) konstart(3)*koffstart(3) maxDfree]; 
+    startparameters = [rand koffstart(1) konstart(1) maxDfree*rand maxDfree*rand;rand koffstart(2) konstart(2)*koffstart(2) maxDfree*rand maxDfree*rand; rand koffstart(3) konstart(3)*koffstart(3) maxDfree*rand maxDfree*rand]; 
     startparam = startparameters(indexfittingparameters);
     tableout = maketable(startparam,fixedparameters, indexfittingparameters,numberofspecies);
     disp('Starting parameters are:')
@@ -86,8 +89,8 @@ while pass == 0
     try
         parameters(:,i) = mle(Dlistdata, 'pdf',custompdf,'start',startparam,'LowerBound',lowerbound,'UpperBound',upperbound);
         nll(:,i) = -sum(log(custompdf(Dlistdata',parameters(:,i))));
-        disp('Found parameters are:') 
-        tableout = maketable(parameters(:,i),fixedparameters, indexfittingparameters,numberofspecies);
+        disp('Found parameters are:')
+        [tableout,totalparam(:,i)] = maketable(parameters(:,i),fixedparameters, indexfittingparameters,numberofspecies);
         disp(tableout)
     catch
      warning('error in fit: no result for this cycle')
@@ -100,8 +103,14 @@ bestrun = find(nll==nllrank(1));
 secondbestrun = find(nll==nllrank(2));
 parametersbest = parameters(:,bestrun(1));
 parameterssecondbest = parameters(:,secondbestrun(1));
+parametersbest = totalparam(:,bestrun(1));
+parameterssecondbest = totalparam(:,secondbestrun(1));
 if any(abs(parametersbest./parameterssecondbest-1)>0.05)
 pass = 0;
+if i > 20*mincyclenumber
+    pass = 1;
+    warning('Passed without convergence because reached max cycle number (20 times min cycle number)')
+end
 else
 pass = 1;
 end
@@ -154,6 +163,7 @@ Dmean3 = c(3)* Dfree(3)*(1-kon(3)/(koff(3)+kon(3)));
 % end
 
 parametersbest = parametersbest(1:numberofspecies,:);
+parametersbest(:,3) = parametersbest(:,2).*parametersbest(:,3);
 paramsize = size(parametersbest);
 
 
@@ -223,8 +233,12 @@ end
 %% One degree of freedom less because meanD is linked to fonDNA and Dfree of all species
 c = parameters(:,1);
 koff = parameters(:,2);
-kon = parameters(:,3);
-Dfree = parameters(:,4);
+%koff = 10.^koff;
+kon = parameters(:,3).*koff;
+%Dfree = parameters(:,4);
+Dfree = max(parameters(:,4),parameters(:,5));
+%D1 = max(0,Dfree-parameters(:,5));
+D1 = min(parameters(:,4),parameters(:,5));
 if input.numberofspecies<3
 c(input.numberofspecies+1:end) = 0;
 end
@@ -254,7 +268,8 @@ for j = 1:numel(input.frametimerange)
     %locerrorpdfcorrected = locerrorpdfcorrected-locerrorpdf;
     combinedpdf = zeros(maxindex,8); 
 for i = fitspecies
-    [pdf]= DDistributiongenerator(koff(i),kon(i),Dfree(i),rangeD,locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,j);
+    %[pdf]= DDistributiongenerator(koff(i),kon(i),Dfree(i),rangeD,locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,j);
+    [pdf]= DDistributiongenerator(koff(i),kon(i),Dfree(i),D1(i),rangeD,locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,j);
     pdf = pdf./sum(pdf);
     combinedpdf = combinedpdf + c(i)*pdf;
 end

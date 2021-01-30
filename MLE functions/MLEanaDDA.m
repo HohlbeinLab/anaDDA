@@ -15,6 +15,7 @@ function [parameters,bootstrapparamstd] = MLEanaDDA(Dlistdata,rangeD,input)
 if input.nofit == false
 [parameters, ~, bootstrapparamstd] = MLEfitDynamic(Dlistdata,input.numberofspecies,input.fixedparameters,rangeD, Dfixed,fitspecies,fixedspecies,input);
 else
-parameters = [1- input.fractionB input.koff1_A input.kon1_A input.Dfree_A; input.fractionB input.koff1_B input.kon1_B input.Dfree_B];
-bootstrapparamstd = zeros(numel(parameters),1);
+parameters = [1- input.fractionB input.koff1_A input.kon1_A input.Dfree_A input.D1_A; input.fractionB input.koff1_B input.kon1_B input.Dfree_B input.D1_B];
+parameters = parameters(1:input.numberofspecies,:);
+bootstrapparamstd = zeros(size(parameters));
 end

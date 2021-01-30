@@ -8,6 +8,7 @@ posAndDummy = sortrows(posAndDummy,size(pos,2)); % sort tracks by ascending fram
 
 tracks = track(posAndDummy,trackParams.maxDisp,trackParams);
 % delete dummy track
+dummytracknumber = unique(tracks(tracks(:,1) == 10000,4));
 tracks(tracks(:,1) == 10000,:) = [];
-
+tracks(tracks(:,4)==max(tracks(:,4)),4)=dummytracknumber;
 end

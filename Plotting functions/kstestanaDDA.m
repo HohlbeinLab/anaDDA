@@ -16,9 +16,10 @@ end
 for ii = 1:size(parameters)
 koff = parameters(ii,2);
 kon = parameters(ii,3);
-Dfree = parameters(ii,4);
+Dfree = max(parameters(ii,4),parameters(ii,5));
 c = parameters(ii,1);
-framescombinedtemp = DDistributiongenerator(koff,kon,Dfree,rangeD,input.dist(i).locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,1);
+D1 = min(parameters(ii,4),parameters(ii,5));
+framescombinedtemp = DDistributiongenerator(koff,kon,Dfree,D1,rangeD,input.dist(i).locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,1);
 framescombinedtemp = framescombinedtemp./sum(framescombinedtemp);
 framescombinedtemp = fractionframetimerange*c*framescombinedtemp(:,framenr);
 framescombined = framescombined + framescombinedtemp;

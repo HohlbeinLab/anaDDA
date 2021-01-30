@@ -17,12 +17,10 @@ for j = 1:length(input.frametimerange)
         input.NumberofFrames = i;
         input.Nparticles = round(input.distributionNparticles(i)*totalparticles);
         [Dlistdatatemp] = SimulationLocalizationandConfinement(input,false);
-        Dlistdatatemp(2,:) = i;
-        Dlistdatatemp(3,:) = input.frametime;
         Dlistdata = [Dlistdata Dlistdatatemp];
     end
 end
-
+D = Dlistdata;
 
 %% Allow tracking window 
 if input.compensatetracking == false
@@ -30,60 +28,60 @@ input.trackingwindow = 300;                                                     
 end
 
 %% Fitting part
-if input.nofit == 0
+%if input.nofit == 0
 [parameters,bootstrapparamstd,KSSTAT] = anaDDA(input,Dlistdata');                             % Actual fitting of data
-else
-parameters = [1 input.koff1_A input.kon1_A input.Dfree_A];                                      % Using same input parameters for both simulation and theoretical distribution
-bootstrapparamstd = [0 0 0 0];
-if numel(input.framerange) == 8 && input.plotlog == true
-    f = figure;
-    f.WindowState = 'maximized';
-end
-%% Plotting functions and calculation of KSSTAT
-for i = 1:numel(input.frametimerange)
-    for j = input.framerange
-        framenr = j;
-        if exist('tracks')
-            truncation = framenr;
-            [D] = GenerateDfromtracks(tracks,input,truncation);
-        end
-        if input.plotlog == true
-        if numel(input.framerange) == 8
-             subplot(4,2,j,'Parent',f)
-             title(['D distribution for track length ' num2str(j) ' steps'])
-            hold on
-            plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input,rangeD,bootstrapparamstd,1,false)
-         else
-            figure
-            title(['D distribution for track length ' num2str(j) ' steps'])
-            hold on
-            plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input,rangeD,bootstrapparamstd,1,true)
-        end
-        end
-
-        if input.KSstats == true % Only calculate KSstats if true       
-            [~,KSSTAT(i,j)]=kstestanaDDA(framenr,parameters,D(:,D(3,:)==input.frametime), input,rangeD,i);
-        else
-            KSSTAT = 0;
-        end
-    end
-end
-% %% Generate plots and calculate KSSTAT values
+% else
+% parameters = [1 input.koff1_A input.kon1_A input.Dfree_A];                                      % Using same input parameters for both simulation and theoretical distribution
+% bootstrapparamstd = [0 0 0 0];
+% if numel(input.framerange) == 8 && input.plotlog == true
+%     f = figure;
+%     f.WindowState = 'maximized';
+% end
+% %% Plotting functions and calculation of KSSTAT
 % for i = 1:numel(input.frametimerange)
-%     input.frametime = input.frametimerange(i);  
-% for j = input.framerange
-%     framenr = j;
-%     if input.KSstats == true % Only calculate KSstats if true       
-%         [~,KSSTAT(i,j)]=kstestanaDDA(framenr,parameters,Dlistdata(:,Dlistdata(3,:)==input.frametime), input,rangeD,i);
-%     else
-%         KSSTAT = 0;
+%     for j = input.framerange
+%         framenr = j;
+%         if exist('tracks')
+%             truncation = framenr;
+%             [D] = GenerateDfromtracks(tracks,input,truncation);
+%         end
+%         if input.plotlog == true
+%         if numel(input.framerange) == 8
+%              subplot(4,2,j,'Parent',f)
+%              title(['D distribution for track length ' num2str(j) ' steps'])
+%             hold on
+%             plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input,rangeD,bootstrapparamstd,1,false)
+%          else
+%             figure
+%             title(['D distribution for track length ' num2str(j) ' steps'])
+%             hold on
+%             plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input,rangeD,bootstrapparamstd,1,true)
+%         end
+%         end
+% 
+%         if input.KSstats == true % Only calculate KSstats if true       
+%             [~,KSSTAT(i,j)]=kstestanaDDA(framenr,parameters,D(:,D(3,:)==input.frametime), input,rangeD,i);
+%         else
+%             KSSTAT = 0;
+%         end
 %     end
-%     if input.plotlog == true % Only plot if this is true
-%         figure
-%         hold on
-%         plotlog(framenr,parameters,Dlistdata(:,Dlistdata(3,:)==input.frametime), input,rangeD,bootstrapparamstd,i)
-%    end
 % end
+% % %% Generate plots and calculate KSSTAT values
+% % for i = 1:numel(input.frametimerange)
+% %     input.frametime = input.frametimerange(i);  
+% % for j = input.framerange
+% %     framenr = j;
+% %     if input.KSstats == true % Only calculate KSstats if true       
+% %         [~,KSSTAT(i,j)]=kstestanaDDA(framenr,parameters,Dlistdata(:,Dlistdata(3,:)==input.frametime), input,rangeD,i);
+% %     else
+% %         KSSTAT = 0;
+% %     end
+% %     if input.plotlog == true % Only plot if this is true
+% %         figure
+% %         hold on
+% %         plotlog(framenr,parameters,Dlistdata(:,Dlistdata(3,:)==input.frametime), input,rangeD,bootstrapparamstd,i)
+% %    end
+% % end
+% % end
+% % KSSTAT = KSSTAT(KSSTAT>0);
 % end
-% KSSTAT = KSSTAT(KSSTAT>0);
-end

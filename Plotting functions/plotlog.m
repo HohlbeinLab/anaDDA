@@ -2,7 +2,6 @@ function plotlog(framenr,parameters,D, input,rangeD,bootstrapparamstd,frametimer
 load(fullfile(fileparts(mfilename('fullpath')),'layoutparameters.mat'))
 layoutparameters.range = -2.5:0.05:1.5;
 maxindex = numel(rangeD);
-
 D = D(1,D(2,:)==framenr);
 logrange = 10.^(min(layoutparameters.range):0.01:min([max(rangeD) max(layoutparameters.range)]));% Converted to x values
 plotrange = min(layoutparameters.range):layoutparameters.plotstep:max(layoutparameters.range)-0.01;
@@ -15,7 +14,7 @@ totallogpdf = zeros(numel(logrange)-1,1);
 [fx,fy] = Generateconfinedfunction(0:0.05:5,rangeD,input);
 fx = fx';
 fy = fy';
-if input.trackingwindow < 100
+if input.compensatetracking == true
       maxD = (input.trackingwindow*input.pixelsize)^2/(4*input.frametime);
       maxDindtracking = round(maxD./(rangeD(2)-rangeD(1)));
 else
@@ -26,9 +25,10 @@ color = [0.3 0.8 0.3];
 for ii = 1:size(parameters)
 koff = parameters(ii,2);
 kon = parameters(ii,3);
-Dfree = parameters(ii,4);
+Dfree = max(parameters(ii,4),parameters(ii,5));
 c = parameters(ii,1);
-framescombined = DDistributiongenerator(koff,kon,Dfree,rangeD,input.dist(frametimerange).locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,1);
+D1 = min(parameters(ii,4),parameters(ii,5));
+framescombined = DDistributiongenerator(koff,kon,Dfree,D1,rangeD,input.dist(frametimerange).locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,1);
 framescombined = framescombined./sum(framescombined);
 framescombined = c*framescombined(:,framenr);
 
@@ -61,7 +61,7 @@ end
 function defaultlayout(layoutparameters,legendinfo)
 %% Plots figures with the defaultlayout
 set(gca,'fontsize',layoutparameters.fontsize)
-axis([-2 1 0 0.035])
+axis([-2 1 0 0.06])
 
 legend(legendinfo,'FontSize',layoutparameters.fontsizelegend,'Location','northwest')
 xticks([-2 -1 0 1])

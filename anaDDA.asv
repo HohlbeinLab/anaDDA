@@ -89,9 +89,7 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
         end    
     else
         input.fixedparameters(:) = -1;
-        if twomobilestates == 0
-            input.fixedparameters(:,5) = 0;
-        end
+        if 
     end
 end
 

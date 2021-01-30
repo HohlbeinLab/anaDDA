@@ -1,4 +1,4 @@
-function [Dfit,startD,tracks] = SimulationLocalizationandConfinement(input, plothist)
+function [Dfit,Dfitonestep,Dfittwostep,startD,tracks] = SimulationLocalizationandConfinement_new(input, plothist)
 % Simulates the presence of maximally two different particles with each
 % maximally two different binding modes and a permanently bound fraction
 Nparticles = input.Nparticles; % Number of particles to be simulated
@@ -34,10 +34,10 @@ koff2_B = koff2_B*Steptime;
 kon2_B = kon2_B*Steptime;
 confinement = input.confinement;
 NFrames = input.NumberofFrames;   % Number of frames
-Dim_A1 = input.D1_A; %has to be different value from Dim_A1, therefore very low
-Dim_A2 = 1e-20; % has to be different value from Dim_A2, therefore very low
-Dim_B1 = input.D1_B+1e-21;%has to be different value from Dim_B1, therefore very low
-Dim_B2 = input.D1_B+1e-22;% has to be different value from Dim_B2, therefore very low
+Dim_A1 = 0.5; %has to be different value from Dim_A1, therefore very low
+Dim_A2 = 1.001; % has to be different value from Dim_A2, therefore very low
+Dim_B1 = 1e-21;%has to be different value from Dim_B1, therefore very low
+Dim_B2 = 1e-22;% has to be different value from Dim_B2, therefore very low
 Dfree_A = sqrt(2*Dfree_A*Steptime);
 Dfree_B = sqrt(2*Dfree_B*Steptime);
 Dim_A1 = sqrt(2*Dim_A1*Steptime);
@@ -78,8 +78,8 @@ threshold = 0.9; % Parameter controls what percentage of the time it should be i
 xdimcell = input.lengthcell; %length of cell in um 
 radiusofcell = input.radiusofcell; %um
 runtime = Frametime/10; %s
-densitylocalizations = input.density; % if you want to introduce bias by having too many fluorophores activated at same time (if 0 not active)
-fovsize = input.fovsize;
+densitylocalizations = 0; % if you want to introduce bias by having too many fluorophores activated at same time (if 0 not active)
+fovsize = 20;
 densityshotnoise = 0;% if you want to introduce effects of shot noise on data(if 0 not active)
 
 % Autofluorescence parameters 
