@@ -2,8 +2,8 @@
 README AnaDDA
 
 Author(s): J.N.A.Vink
-Version 1.0
-Last update: 03.08.2020
+Version 2.0
+Last update: 09.02.2021
 
 Installation:
 Clone the anaDDA folder from Github to the desired folder on your desktop. Subsequently add this folder and its subfolders to the search path of MATLAB. 
