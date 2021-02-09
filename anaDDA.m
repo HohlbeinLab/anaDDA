@@ -149,11 +149,13 @@ else
 end
 %% Edit input.framerange in case not all 1-to-8 are provided (D from tracks longer than 8 are not used in further fitting).
 input.framerange = unique(min(D(2,:),8));
+
 %% Loading of precalculated distributions for localization error (to speed up later fitting)
 % If you want to generate a new file run the GeneratePhi2 script.
 filepath = mfilename('fullpath');
 filepath = fileparts(filepath);
-load([filepath '\locdisttable.mat']); %Loads pre-generated correlated localization error distributions 
+filename_temp = fullfile(filepath, 'locdisttable.mat');
+load(filename_temp); %Loads pre-generated correlated localization error distributions 
 
 for i = 2:8
     input.locdist{i} = griddedInterpolant(rangex(:,i),locdist(:,i));
