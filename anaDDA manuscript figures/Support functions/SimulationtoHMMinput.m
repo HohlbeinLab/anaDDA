@@ -16,7 +16,8 @@ for i = input.framerange
         end
     end
 end
-path = 'D:\jnavink\Desktop\Manuscript Analysis\Figure 3';
+filepath = mfilename('fullpath');
+path = fileparts(filepath);
 file =  ['\SimulationvbSPT_Npart_' num2str(totalparticles) '_koff_' num2str(input.koff1_A) '_kon_' num2str(input.kon1_A) '_Dfree_' num2str(input.Dfree_A) '_sigmaerror_' num2str(input.sigmaerror) '_' num2str(k)]; 
 save([path, file, '.mat'], 'trajectories')
 res=VB3_HMManalysis2('D:\jnavink\Desktop\Manuscript Analysis\Figure 3\runinput_08_Apr_2019.m',[path, file, '.mat']);

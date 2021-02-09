@@ -1,19 +1,25 @@
-function plotlog(framenr,parameters,D, input,rangeD,bootstrapparamstd,frametimerange,singlefigure)
+function plotlog(framenr,parameters,D, input,bootstrapparamstd,frametimerange,singlefigure,locerrorparameter)
 load(fullfile(fileparts(mfilename('fullpath')),'layoutparameters.mat'))
-layoutparameters.range = -2.5:0.05:1.5;
-maxindex = numel(rangeD);
+maxDfree = max(parameters(:,4),parameters(:,5));
+maxrangeD = -log(1e-22)*maxDfree;
+rangeD =maxrangeD/(input.precision*2):maxrangeD/input.precision:maxrangeD;
 D = D(1,D(2,:)==framenr);
-logrange = 10.^(min(layoutparameters.range):0.01:min([max(rangeD) max(layoutparameters.range)]));% Converted to x values
-plotrange = min(layoutparameters.range):layoutparameters.plotstep:max(layoutparameters.range)-0.01;
+logrange = 10.^(min(layoutparameters.range):0.01:max(layoutparameters.range));% Converted to x values
+plotrange = min(layoutparameters.range):layoutparameters.plotstep:max(layoutparameters.range);
 histrange = min(layoutparameters.range):layoutparameters.histstep:max(layoutparameters.range);
 histplotratio = layoutparameters.histstep/layoutparameters.plotstep;
 histogram(log10(D), histrange,'Normalization','probability','Facecolor', layoutparameters.facecolor, 'Edgecolor',layoutparameters.edgecolor,'HandleVisibility','off');
 
 totallogpdf = zeros(numel(logrange)-1,1);
+if input.confinement==true
+    [fx,fy] = Generateconfinedfunction(0:0.05:5,input);
+    fx = fx';
+    fy = fy';
+else
+    fx = NaN;
+    fy = NaN;
+end
 
-[fx,fy] = Generateconfinedfunction(0:0.05:5,rangeD,input);
-fx = fx';
-fy = fy';
 if input.compensatetracking == true
       maxD = (input.trackingwindow*input.pixelsize)^2/(4*input.frametime);
       maxDindtracking = round(maxD./(rangeD(2)-rangeD(1)));
@@ -28,16 +34,22 @@ kon = parameters(ii,3);
 Dfree = max(parameters(ii,4),parameters(ii,5));
 c = parameters(ii,1);
 D1 = min(parameters(ii,4),parameters(ii,5));
-framescombined = DDistributiongenerator(koff,kon,Dfree,D1,rangeD,input.dist(frametimerange).locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,1);
+if input.fitlocerror == 0
+    locerror = input.sigmaerror.^2/input.frametime;
+else
+    locerror = locerrorparameter.^2/input.frametime;
+end
+
+framescombined = DDistributiongenerator(koff,kon,Dfree,D1,rangeD,locerror,fx,fy,maxDindtracking,input,1);
 framescombined = framescombined./sum(framescombined);
 framescombined = c*framescombined(:,framenr);
 
 func = @(x) interp1(framescombined,x,'spline');
 lograngetrue = (logrange-rangeD(1))*framenr./(rangeD(3)-rangeD(2))+1;
-
-for i = 1:numel(lograngetrue)-1
-logpdf(i) = integral(func,lograngetrue(i),lograngetrue(i+1));
-end
+logpdf = framenr*logrange.*func(lograngetrue)/(0.44*(rangeD(3)-rangeD(2))/0.01);
+% for i = 1:numel(lograngetrue)-1
+% logpdf(i) = integral(func,lograngetrue(i),lograngetrue(i+1));
+% end
 color = circshift(color,1);
 % framescombined = interp1(framescombined,1:1/precisionfactor:numel(framescombined),'spline');
 % maximumplotDvalue = max(logrange);% Max x value for your log plot
@@ -48,7 +60,7 @@ color = circshift(color,1);
 % for i = 1:numel(logrange)-1
 %     logpdf(i) = sum(framescombined(logrange2(i):logrange2(i+1))); 
 % end
-totallogpdf = totallogpdf + logpdf';
+totallogpdf = totallogpdf + logpdf;
 if size(parameters)>1
 plot(plotrange,logpdf*histplotratio,'LineWidth',layoutparameters.linewidth,'Color',color)
 end

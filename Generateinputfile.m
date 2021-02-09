@@ -7,13 +7,14 @@ function [input] = Generateinputfile
 %% Basic input parameters (Can also be altered via the prompt if anaDDA is run without inputfile)
 input.numberofspecies = 1;                                      % Number of (non interacting) species you want to fit (max 3)
 input.upperDfree = 10;                                          % Upper estimate of Dfree (um2/s)
-input.sigmaerror = 0.03;                                        % Localization error used in both fitting and simulations(um)
+input.sigmaerror = 0.03;                                        % Localization error used in both fitting and simulations(um) (only used if fitlocerror = 0)
 input.confinement = false;                                      % Whether confinement boundaries are taken in account in fitting data
 input.radiusofcell = 0.5;                                       % The radius of the spherical/rod-shaped cells/boundaries used for both fitting and simulations (um)
 input.lengthcell = 3;                                           % The length of the spherical/rod-shaped cells/boundaries used for both fitting and simulations (um)
 input.compensatetracking = true;                                % Whether tracking windows are taken in account in fitting data
 input.trackingwindow = 300;                                     % length of tracking window (um)
 input.fixedparameters = [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
+input.fitlocerror = 0;                                          % Decides whether localization error is fitted from data or supplied by user
 
 %% Advanced fitting parameters
 input.bootstrapping = true;                                     % If you want to include bootstrapping for std dev estimations
@@ -23,10 +24,13 @@ input.lowerstartkoff = 0.05;                                    % Lower bound of
 input.upperstartkoff = 2000;                                    % Upper bound of koff estimate in MLE optimization (s-1)
 input.lowerstartkon = 0.1;                                      % Lower bound of kon estimate in MLE optimization (represented as fraction of koff) 
 input.upperstartkon = 10;                                       % Upper bound of kon estimate in MLE optimization (represented as fraction of koff) 
-input.precision = 50000;                                        % Number of points in distribution for which anaDDA calculates likelihood directly (instead of interpolation)
+input.lowerstartlocerror = 0.02;                                % Lower bound of loc error estimate in MLE optimization (um)
+input.upperstartlocerror = 0.04;                                % Upper bound of loc error estimate in MLE optimization (um)
+input.precision = 2^16;                                         % Number of points in distribution for which anaDDA calculates likelihood directly (instead of interpolation; multitude of 2 is most optimal for fft convolution)
 input.nofit = false;                                            % Whether fitting algorithm is used (false) or directly use input parameters from simulation to calculate distribution (true) 
 input.plotlog = true;                                           % Whether plots are being generated (true)
 input.KSstats = true;                                           % Whether Kolmogorov Smirnov test statistic is calculated (true)
+input.integrationinterval=200;                                  % Number of points that are calculated directly by integration in Distributiongenerator
 
 %% Advanced simulation parameters
 % These parameters only matter in case you use simulation

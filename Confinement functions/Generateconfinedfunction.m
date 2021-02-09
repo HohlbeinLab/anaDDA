@@ -1,8 +1,7 @@
-function [fx,fy] = Generateconfinedfunction(rangeDPDA,rangeDStracy,input)
+function [fx,fy] = Generateconfinedfunction(rangeDPDA,input)
 % This function calculates the distribution of D given a certain cell
 % geometry, localization error and frametime. This distribution is derived from equations 
 t = input.frametime;
-locerror = input.sigmaerror.^2;
 
 %% Generate MSDs for X confinement
 % Size of box in x dimension is calculated
@@ -17,7 +16,7 @@ tempc = (1./n.^4)*exp(-0.5*(n*pi./xbox).^2.*(rangeDPDA*2)*t);
 c = c+tempc;
 end
 
-MSDx = a-b*c+2*locerror;
+MSDx = a-b*c;
 Dx = MSDx./(2*t);
 fun = @(x) 0.5*(besselj(0,x)-besselj(2,x));
 
@@ -36,7 +35,6 @@ Dxsphere = MSDspherical(input.radiusofcell,t,rangeDPDA);
 Dxsphere = Dxsphere.*Volumesphere./(Volumecylinder+Volumesphere);
 Dx = Dxsphere + Dx';
 %Dx = Dx';
-Dx = Dx + input.sigmaerror.^2./input.frametime;
 
 
 ybox = input.lengthcell-2*input.radiusofcell+input.radiusofcell*(4/3*pi).^(1/3);
@@ -51,7 +49,7 @@ tempc = (1/n.^4)*exp(-0.5*(n*pi./ybox).^2.*(rangeDPDA*2)*t);
 c = c+tempc;
 end
 
-MSDy = a-b*c+2*locerror;
+MSDy = a-b*c;
 Dy = MSDy./(2*t);
 % Dy2 = rangeDPDA.*Volumecylinder./(Volumecylinder+Volumesphere);
 % Dy2 = Dy2 + Dxsphere;
@@ -72,7 +70,6 @@ end
 % Dy = Dy+ input.sigmaerror.^2/input.frametime;
 
 %Dy = Dy2;
-x = rangeDStracy';
 % pdfarray = (1./sqrt(Dx)).*(1./sqrt(Dy)).*exp((-(1./Dx)-(1./Dy)).*x/2).*besseli0_fast(((1./Dx)-(1./Dy)).*x/2)*(x(2)-x(1));
 % pdfarray = single(pdfarray);
 % pdfarray = gpuArray(pdfarray);

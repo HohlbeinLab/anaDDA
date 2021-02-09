@@ -1,12 +1,20 @@
-function [pvalue,KSSTAT]=kstestanaDDA(framenr,parameters,D, input,rangeD,frametimerange)
+function [pvalue,KSSTAT]=kstestanaDDA(framenr,parameters,D, input,frametimerange,locerrorparam)
+maxDfree = max(parameters(:,4),parameters(:,5));
+maxrangeD = -log(1e-22)*maxDfree;
+rangeD =maxrangeD/(input.precision*2):maxrangeD/input.precision:maxrangeD;
 framescombined = zeros(length(rangeD),framenr);
 for i = 1:numel(input.frametimerange)
 input.frametime = input.frametimerange(i);
 fractionframetimerange = length(D(:,D(3,:)==input.frametime))./length(D);
-maxindex = numel(rangeD);
-[fx,fy] = Generateconfinedfunction(0:0.05:5,rangeD,input);
+
+if input.confinement == true
+[fx,fy] = Generateconfinedfunction(0:0.05:5,input);
 fx = fx';
 fy = fy';
+else
+    fx = NaN;
+    fy = NaN;
+end
 if input.trackingwindow < 100
       maxD = (input.trackingwindow*input.pixelsize)^2/(4*input.frametime);
       maxDindtracking = round(maxD./(rangeD(2)-rangeD(1)));
@@ -19,7 +27,12 @@ kon = parameters(ii,3);
 Dfree = max(parameters(ii,4),parameters(ii,5));
 c = parameters(ii,1);
 D1 = min(parameters(ii,4),parameters(ii,5));
-framescombinedtemp = DDistributiongenerator(koff,kon,Dfree,D1,rangeD,input.dist(i).locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,1);
+if input.fitlocerror == 0
+    locerror = input.sigmaerror.^2/input.frametime;
+else
+    locerror = locerrorparam.^2/input.frametime;
+end
+framescombinedtemp = DDistributiongenerator(koff,kon,Dfree,D1,rangeD,locerror,fx,fy,maxDindtracking,input,1);
 framescombinedtemp = framescombinedtemp./sum(framescombinedtemp);
 framescombinedtemp = fractionframetimerange*c*framescombinedtemp(:,framenr);
 framescombined = framescombined + framescombinedtemp;

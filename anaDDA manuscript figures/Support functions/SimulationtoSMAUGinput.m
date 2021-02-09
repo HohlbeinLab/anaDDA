@@ -21,7 +21,8 @@ trackSMAUGtemp(:,5) = tracks(:,2);
 trackSMAUG = [trackSMAUG;trackSMAUGtemp];
 end
 trfile = trackSMAUG;
-path = 'D:\jnavink\Desktop\Manuscript Analysis\Figure 3_SMAUG';
+filepath = mfilename('fullpath');
+path = fileparts(filepath);
 file =  ['\SimulationSMAUG_Npart_' num2str(totalparticles) '_koff_' num2str(input.koff1_A) '_kon_' num2str(input.kon1_A) '_Dfree_' num2str(input.Dfree_A) '_sigmaerror_' num2str(input.sigmaerror) '_' num2str(k)]; 
 save([path, file, '.mat'], 'trfile')
 out = SMAUG(trfile,file(2:end));

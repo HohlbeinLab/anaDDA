@@ -17,6 +17,7 @@ C = [1 sqrt(1/4+3/4*corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(
 C = C(1:n,1:n); % The correlation matrix only for numbers of frames 
 A = D*C;
 detA = det(A);
+detA = (beta^n)*(n+1)/(2^n);
 eigenvalues = eig(A);
 bvector = alpha*ones(n,1);
 
@@ -33,3 +34,18 @@ N = round(50000/n);
 end
 c = n*alpha;
 fy = (y.^(-1+n*alpha))/(detA^alpha*gamma(1)).*Phi2(bvector,c,xvector,N)';
+%fy = (y.^(n-1))/(detA).*Phi2(ones(n,1),n,xvector,N)';
+%fy = (y/beta).^(n-1)/((beta^n)*(n+1)/(2^n)*gamma(n)).*Phi2(ones(n,1),n,xvector,N)';
+
+function fy = calculatelocerrordist(y,beta,n)
+
+C = [1 sqrt(1/4+3/4*corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew);sqrt(1/4+3/4*corrskew) 1 sqrt(1/4+3/4*corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew);sqrt(corrskew) sqrt(1/4+3/4*corrskew) 1 sqrt(1/4+3/4*corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew); sqrt(corrskew) sqrt(corrskew) sqrt(1/4+3/4*corrskew) 1 sqrt(1/4+3/4*corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew);sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(1/4+3/4*corrskew) 1 sqrt(1/4+3/4*corrskew) sqrt(corrskew) sqrt(corrskew);sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(1/4+3/4*corrskew) 1 sqrt(1/4+3/4*corrskew) sqrt(corrskew); sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(1/4+3/4*corrskew) 1 sqrt(1/4+3/4*corrskew); sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(corrskew) sqrt(1/4+3/4*corrskew) 1]; % The correlation matrix
+C = C(1:n,1:n); % The correlation matrix only for numbers of frames 
+eigenvalues = eig(C);
+range = 0:0.05:20;
+xvector = -range./(beta*eigenvalues);
+bla = Phi2(ones(n,1),n,xvector',N)';
+%(range/beta).^(n-1)/((beta)*(n+1)/(2^n)).*Phi2(ones(n,1),n,xvector',N)';
+
+
+

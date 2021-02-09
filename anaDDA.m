@@ -25,7 +25,7 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
     opts.Interpreter = 'tex';
     answers = inputdlg({'(1) How many species do you want to fit?',... %JH could be also non-interconverting?!
         '(2) What is the maximum expected diffusion coefficient \it{D} \rm(µm^2/s)?',...
-        '(3) What is the estimated localization error in your measurement (µm)?',...
+        '(3) What is the estimated localization error in your measurement (µm) (-1 if no estimate)?',...
         '(4) Are there any (spherical/rod-shaped) confinement boundaries (y/n)?',...
         '(5) Are there any maximum tracking windows applied (y/n)?',...
         '(6) Is one of the transitioning states immobile (y/n)?',...
@@ -33,7 +33,14 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
         'Input parameters', 1, {'1','10','0.03','n','n','y','n'}, opts);
     input.numberofspecies = str2num(answers{1});
     input.upperDfree = str2num(answers{2});
-    input.sigmaerror = str2num(answers{3});
+    
+    if str2num(answers{3}) == -1
+        input.fitlocerror = 1;
+        input.sigmaerror = NaN; 
+    else
+        input.sigmaerror = str2num(answers{3});
+        input.fitlocerror = 0;
+    end
     
     if answers{4} == 'y'
         input.confinement = 1;
@@ -93,6 +100,17 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
             input.fixedparameters(:,5) = 0;
         end
     end
+    if twomobilestates == 1 && input.fitlocerror == 1
+        error('Can only fit two mobile states with known localization error')
+    end    
+end
+
+%% For compatibility with older versions/input files
+if isfield(input,'fitlocerror')==0
+input.fitlocerror = 0;
+input.integrationinterval=200;
+input.lowerstartlocerror = NaN;
+input.upperstartlocerror = NaN;
 end
 
 %% Prompt to select input data
@@ -100,7 +118,6 @@ if ~exist('inputdata')
 [tracksfilename, tracksPathname] = uigetfile('MatFile data:','MultiSelect', 'on');
 inputdata = importdata([tracksPathname tracksfilename]);
 end
-
 
 %% Change tracks to list of diffusion coefficients
 %Structure of tracks (2D) 
@@ -120,11 +137,11 @@ if dataformat(2) == 5
     D = [];
     input.frametimerange = unique(inputdata(:,5));
     for j = input.frametimerange
-    tracks = inputdata(inputdata(:,5)==j,:);
-    input.frametime = j;
-    truncation = 8; %careful: hard-coded number!
-    [Dtemp] = GenerateDfromtracks(tracks,input,truncation);
-    D = [D Dtemp];
+        tracks = inputdata(inputdata(:,5)==j,:);
+        input.frametime = j;
+        truncation = 8;
+        [Dtemp] = GenerateDfromtracks(tracks,input,truncation);
+        D = [D Dtemp];
     end
 else
     D = inputdata';
@@ -132,31 +149,39 @@ else
 end
 %% Edit input.framerange in case not all 1-to-8 are provided (D from tracks longer than 8 are not used in further fitting).
 input.framerange = unique(min(D(2,:),8));
-%% Pre-calculation of distributions for localization error (to speed up later fitting)
-maxDfree = input.upperDfree+input.sigmaerror^2/min(input.frametimerange);
-maxrangeD =-log(maxDfree*1e-10)*maxDfree;
-rangeD =maxrangeD/(input.precision*2):maxrangeD/input.precision:maxrangeD;
+%% Loading of precalculated distributions for localization error (to speed up later fitting)
+% If you want to generate a new file run the GeneratePhi2 script.
+filepath = mfilename('fullpath');
+filepath = fileparts(filepath);
+load([filepath '\locdisttable.mat']); %Loads pre-generated correlated localization error distributions 
 
-if ~isfield(input,'dist')
-for j = 1:numel(input.frametimerange)
-%maxDfree = input.upperDfree+input.sigmaerror^2/min(input.frametimerange(j));
-%maxrangeD =-log(maxDfree*1e-10)*maxDfree;
-%rangeD =maxrangeD/(input.precision*2):maxrangeD/input.precision:maxrangeD;
-locerror = input.sigmaerror.^2/input.frametimerange(j);
-input.frametime = input.frametimerange(j);
-[input.dist(j).locerrorpdf,input.dist(j).locerrorpdfcorrected] = makelocerrordistributions(rangeD,locerror,input);
+for i = 2:8
+    input.locdist{i} = griddedInterpolant(rangex(:,i),locdist(:,i));
 end
-end
+input.rangex = rangex;
 
 %% Fitting of data with MLE and bootstrapping
-[parameters,bootstrapparamstd] = MLEanaDDA(D,rangeD,input);
-
+% If input.nofit = true, it skips the MLE and immediately plots the data
+% with the supplied parameters in the input file
+if input.nofit == false
+    [parameters, ~, bootstrapparamstd,locerrorparameter] = MLEfitDynamic(D,input);
+else
+    parameters = [1- input.fractionB input.koff1_A input.kon1_A input.Dfree_A input.D1_A; input.fractionB input.koff1_B input.kon1_B input.Dfree_B input.D1_B];
+    parameters = parameters(1:input.numberofspecies,:);
+    bootstrapparamstd = zeros(size(parameters));
+    locerrorparameter = input.sigmaerror;
+end
+if isnan(locerrorparameter)
+    locerrorparameter = input.sigmaerror;
+end
+%% Plotting functions and calculation of KSSTAT
 if numel(input.framerange) == 8 && input.plotlog == true
     f = figure;
     f.WindowState = 'maximized';
 end
-%% Plotting functions and calculation of KSSTAT
+
 for i = 1:numel(input.frametimerange)
+    input.frametime = input.frametimerange(i);
     for j = input.framerange
         framenr = j;
         if exist('tracks')
@@ -168,17 +193,17 @@ for i = 1:numel(input.frametimerange)
              subplot(4,2,j,'Parent',f)
              title(['D distribution for track length ' num2str(j) ' steps'])
             hold on
-            plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input,rangeD,bootstrapparamstd,1,false)
+            plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input,bootstrapparamstd,1,false,locerrorparameter)
          else
             figure
             title(['D distribution for track length ' num2str(j) ' steps'])
             hold on
-            plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input,rangeD,bootstrapparamstd,1,true)
+            plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input,bootstrapparamstd,1,true,locerrorparameter)
         end
         end
 
         if input.KSstats == true % Only calculate KSstats if true       
-            [~,KSSTAT(i,j)]=kstestanaDDA(framenr,parameters,D(:,D(3,:)==input.frametime), input,rangeD,i);
+            [~,KSSTAT(i,j)]=kstestanaDDA(framenr,parameters,D(:,D(3,:)==input.frametime), input,i,locerrorparameter);
         else
             KSSTAT = 0;
         end
@@ -203,19 +228,19 @@ end
 fprintf(fileid','%s\n', 'Parameters and bootstrap std values for each species');
 
 if sum(parameters(1:input.numberofspecies,5)) == 0
-    fprintf(fileid','%s\t%s\t%s\t%s\n',[string('fraction'),string('koff'),string('kon'),string('Dfree')]);
+    fprintf(fileid','%s\t%s\t%s\t%s\t%s\n',[string('fraction'),string('koff'),string('kon'),string('Dfree'),string('locerror')]);
     for i = 1:input.numberofspecies
         fprintf(fileid, '%s\n', '----------------------------------------');
-        fprintf(fileid','%s\t%s\t%s\t%s\n',string(parameters(i,1:4)));
+        fprintf(fileid','%s\t%s\t%s\t%s\t%s\n',[string(parameters(i,1:4)) num2str(locerrorparameter)]);
         fprintf(fileid','%s\t%s\t%s\t%s\n',string(bootstrapparamstd(i,1:4)));
         fprintf(fileid, '%s\n', '----------------------------------------');
     end
 else
-        fprintf(fileid','%s\t%s\t%s\t%s\n',[string('fraction'),string('koff'),string('kon'),string('D1'),string('D2')]);
+        fprintf(fileid','%s\t%s\t%s\t%s\t%s\t%s\n',[string('fraction'),string('koff'),string('kon'),string('D1'),string('D2'),string('locerror')]);
     for i = 1:input.numberofspecies
         fprintf(fileid, '%s\n', '----------------------------------------');
-        fprintf(fileid','%s\t%s\t%s\t%s\n',string(parameters(i,:)));
-        fprintf(fileid','%s\t%s\t%s\t%s\n',string(bootstrapparamstd(i,:)));
+        fprintf(fileid','%s\t%s\t%s\t%s\t%s\t%s\n',[string(parameters(i,:)) num2str(locerrorparameter)]);
+        fprintf(fileid','%s\t%s\t%s\t%s\t%s\n',string(bootstrapparamstd(i,:)));
         fprintf(fileid, '%s\n', '----------------------------------------');
     end
 end

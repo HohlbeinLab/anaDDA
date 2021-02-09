@@ -1,7 +1,7 @@
 %% Script to make figures S2 of Vink et al.(2020) Extracting transition rates in particle tracking using analytical diffusion distribution analysis
 filepath = mfilename('fullpath');
 filepath = fileparts(filepath);
-load([filepath '\inputFigureS2.mat']); %Loads input file if stored in same location as this script
+load([filepath '\inputFigureS2A.mat']); %Loads input file if stored in same location as this script
 koffrange = [0.1 0.2 0.5 1 2 5 10 20 50 100 200 500 1000];
 Drange = [4];
 Nparticlerange = [1000];

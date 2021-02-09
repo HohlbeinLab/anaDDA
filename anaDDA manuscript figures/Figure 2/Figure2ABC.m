@@ -40,11 +40,6 @@ for l = 1:numel(Nparticlerange)
         maxrangeD =-log(maxDfree*1e-10)*maxDfree;
         rangeD =maxrangeD/(input.precision*2):maxrangeD/input.precision:maxrangeD;
 
-        for z = 1:numel(input.frametimerange)
-            locerror = input.sigmaerror.^2/input.frametimerange(z);
-            [input.dist(z).locerrorpdf,input.dist(z).locerrorpdfcorrected] = makelocerrordistributions(rangeD,locerror,input);
-        end
-
 
         for i = 1:numel(koffrange)
             input.koff1_A = koffrange(i);

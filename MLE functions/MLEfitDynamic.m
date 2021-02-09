@@ -1,33 +1,26 @@
-function [parametersbest,bootstrapparammean,bootstrapparamstd] = MLEfitDynamic(Dlistdata, numberofspecies,fixedparameters,rangeD, Dfixed,fitspecies,fixedspecies,input)
+function [parametersbest,bootstrapparammean,bootstrapparamstd,locerrorparameter] = MLEfitDynamic(Dlistdata,input)
 %% Used to extract parameters based on MLE estimation. 
-% Can estimate parameters for up to three separate species, each with a koff, kon, Dfree and abundance c. 
+% Can estimate parameters for up to three separate species, each with a koff, kon, Dfree (or D1 and D2) and abundance c. 
 % Each species adds 4 parameters to be estimated if not restricted. However
 % two degrees of freedom are removed due to the following equations:
 
-% meanD of dataset
-meanD = mean(Dlistdata(1,:));
-fixedparameters(1,1) = 1;
 % Number of degrees of freedom (all the ones that are 0) 
 % depend on species and which parameters are fixed
+fixedparameters = input.fixedparameters; 
+numberofspecies = input.numberofspecies;
+fixedparameters(1,1) = 1;
 fixedparameterstemp = fixedparameters(1:numberofspecies,:);
-
-% if fixedparameterstemp(1,4) == 0 % If Dfree is not fixed
-%  fixedparameterstemp(1,4)=1; 
-% elseif fixedparameterstemp(1,3) == 0 % If kon is not fixed
-% fixedparameterstemp(1,3)=1;
-% else 
-% end
-
-startparameters = [0.3 50 30 4 1;0.3 1 1 4 1; 0.3 1 1 4 1]; 
 indexfittingparameters = fixedparameterstemp==-1;
 indexfittingparameters = [indexfittingparameters; zeros(3-numberofspecies,5)];
 indexfittingparameters = logical(indexfittingparameters);
 
+% Initialise starting parameters and lower bound and upperbound
+startparameters = [0.3 50 30 4 1;0.3 1 1 4 1; 0.3 1 1 4 1]; 
 startparam = startparameters(indexfittingparameters);
 lowerbound = zeros(length(startparam),1)+0.000001;
-%lowerbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);-3*ones(sum(indexfittingparameters(:,2)==1),1);0.01*ones(sum(indexfittingparameters(:,3)==1),1);zeros(sum(indexfittingparameters(:,4)==1),1)+0.000001;zeros(sum(indexfittingparameters(:,5)==1),1)+0.000001];
 upperbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);input.upperstartkon*input.upperstartkoff*ones(sum(sum(indexfittingparameters(:,2:3)==1)),1);input.upperDfree*ones(sum(indexfittingparameters(:,4)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,5)==1),1)];
-%upperbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);3*ones(sum(indexfittingparameters(:,2)==1),1);100*ones(sum(indexfittingparameters(:,3)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,4)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,5)==1),1)];
+
+%% Make lists to keep track what measurement and track length D values come from
 Frametimelist = Dlistdata(3,:);
 Numberofframes = Dlistdata(2,:);
 Dlistdata = Dlistdata(1,:);
@@ -38,84 +31,88 @@ Frametimelist = Frametimelist(sortind);
 Dlistdata = Dlistdata(sortind);
 Numberofframes = Numberofframes(sortind);
 
+%% Generate frequency table of the lists above and confined function if required
 for j = 1:numel(input.frametimerange)
     table = tabulate(Numberofframes(Frametimelist==input.frametimerange(j)));
     frequency(j,:) = table(:,2);
     input.frametime = input.frametimerange(j);
-    [fx(:,j),fy(:,j)] = Generateconfinedfunction(0:0.05:input.upperDfree,rangeD,input);
+    if input.confinement == true
+        [fx(:,j),fy(:,j)] = Generateconfinedfunction(0:0.05:input.upperDfree,input);
+    else
+        fx = NaN;
+        fy = NaN;
+    end 
 end
 
-if input.compensatetracking == true
-      maxD = (input.trackingwindow*input.pixelsize)^2/(4*input.frametime);
-      maxDindtracking = round(maxD./(rangeD(2)-rangeD(1)));
-else
-    maxDindtracking = 0;
-end
     
 % Fitting function
-custompdf = @(Dlistdata,varargin) pdfDvaluesMLE(Dlistdata, Numberofframes,Frametimelist,input,rangeD,fitspecies, fixedspecies, Dfixed, fixedparameters,indexfittingparameters,fx,fy,maxDindtracking,frequency,varargin);
+custompdf = @(Dlistdata,varargin) pdfDvaluesMLE(Dlistdata, Numberofframes,input, fixedparameters,indexfittingparameters,fx,fy,frequency,varargin);
 
 
 %% Start values for MLE
 mincyclenumber = input.cyclenumber;
 lowerstartkoff = input.lowerstartkoff;
 upperstartkoff = input.upperstartkoff;
+lowerstartlocerror = input.lowerstartlocerror;
 
 lowerstartkon = input.lowerstartkon;
 upperstartkon = input.upperstartkon;
-%startc = ;
-%  startDfree = [1];
- nllbest = 10^99;
-% parametersbest = [];
+upperstartlocerror = input.upperstartlocerror;
 maxDfree = input.upperDfree;
-%parameters = zeros(sum(indexfittingparameters(:)),cyclenumber);
-i = 1;
-parametersbestsofar = 1000;
-pass = 0;
-while pass == 0
 
+i = 1;
+pass = 0;
+if input.fitlocerror == 1
+    lowerbound = [lowerbound; lowerstartlocerror];
+    upperbound = [upperbound; upperstartlocerror];
+end
+
+while pass == 0
     disp(['Running fitting cycle ' num2str(i) ' of at least ' num2str(mincyclenumber)])
     for j = 1:3
-    koffstart(j) = 10^((log10(upperstartkoff)-log10(lowerstartkoff))*rand()+log10(lowerstartkoff));
-    %koffstart(j) = -3 + 6*rand();
-    konstart(j) = (upperstartkon-lowerstartkon)*rand+lowerstartkon;
-    konstart(j) = 10^(-1 + 2*rand());
+        koffstart(j) = 10^((log10(upperstartkoff)-log10(lowerstartkoff))*rand()+log10(lowerstartkoff));
+        konstart(j) = (upperstartkon-lowerstartkon)*rand+lowerstartkon;
+        konstart(j) = 10^(-1 + 2*rand());
+        locerrorstart = lowerstartlocerror + (upperstartlocerror-lowerstartlocerror)*rand();
     end
     startparameters = [rand koffstart(1) konstart(1) maxDfree*rand maxDfree*rand;rand koffstart(2) konstart(2)*koffstart(2) maxDfree*rand maxDfree*rand; rand koffstart(3) konstart(3)*koffstart(3) maxDfree*rand maxDfree*rand]; 
     startparam = startparameters(indexfittingparameters);
-    tableout = maketable(startparam,fixedparameters, indexfittingparameters,numberofspecies);
+    if input.fitlocerror == 1
+        startparam = [startparam; locerrorstart];
+    end
+    tableout = maketable(startparam,fixedparameters, indexfittingparameters,numberofspecies,input.fitlocerror);
     disp('Starting parameters are:')
     disp(tableout)
     try
         parameters(:,i) = mle(Dlistdata, 'pdf',custompdf,'start',startparam,'LowerBound',lowerbound,'UpperBound',upperbound);
-        nll(:,i) = -sum(log(custompdf(Dlistdata',parameters(:,i))));
+        nll(:,i) = -sum(log(custompdf(Dlistdata',parameters(:,i)')));
         disp('Found parameters are:')
-        [tableout,totalparam(:,i)] = maketable(parameters(:,i),fixedparameters, indexfittingparameters,numberofspecies);
+        [tableout,totalparam(:,i),locerrorparam] = maketable(parameters(:,i),fixedparameters, indexfittingparameters,numberofspecies,input.fitlocerror);
         disp(tableout)
     catch
-     warning('error in fit: no result for this cycle')
-     parameters(:,i) = 0;
-     nll(:,i) = 1e10;
+         warning('error in fit: no result for this cycle')
+         parameters(:,i) = 0;
+         nll(:,i) = 1e10;
     end
-if i >= mincyclenumber
-nllrank = sort(nll);
-bestrun = find(nll==nllrank(1));
-secondbestrun = find(nll==nllrank(2));
-parametersbest = parameters(:,bestrun(1));
-parameterssecondbest = parameters(:,secondbestrun(1));
-parametersbest = totalparam(:,bestrun(1));
-parameterssecondbest = totalparam(:,secondbestrun(1));
-if any(abs(parametersbest./parameterssecondbest-1)>0.05)
-pass = 0;
-if i > 20*mincyclenumber
-    pass = 1;
-    warning('Passed without convergence because reached max cycle number (20 times min cycle number)')
-end
-else
-pass = 1;
-end
-end
-i =  i + 1;    
+    if i >= mincyclenumber
+        nllrank = sort(nll);
+        bestrun = find(nll==nllrank(1));
+        secondbestrun = find(nll==nllrank(2));
+        parametersbest = parameters(:,bestrun(1));
+        parameterssecondbest = parameters(:,secondbestrun(1));
+        parametersbest = totalparam(:,bestrun(1));
+        parameterssecondbest = totalparam(:,secondbestrun(1));
+        if any(abs(parametersbest./parameterssecondbest-1)>0.05)
+            pass = 0;
+            if i > 20*mincyclenumber
+                pass = 1;
+                warning('Passed without convergence because reached max cycle number (20 times min cycle number)')
+            end
+        else
+            pass = 1;
+        end
+    end
+    i =  i + 1;    
 end
 
 parameters(:,nll==0)=[];
@@ -124,7 +121,7 @@ nllbest = min(nll);
 bestrun = find(nll==nllbest);
 parametersbest1 = parameters(:,bestrun(1));
 disp('End of run, best parameters were:')
-tableout = maketable(parametersbest1,fixedparameters, indexfittingparameters,numberofspecies);
+tableout = maketable(parametersbest1,fixedparameters, indexfittingparameters,numberofspecies,input.fitlocerror);
 disp(tableout)
 %   if nllbest >  -sum(log(custompdf(Dlistdata',input.koff1_A,input.kon1_A,input.Dfree_A)))
 %         sprintf('not enough cyclenumbers')   
@@ -132,18 +129,27 @@ disp(tableout)
 
 %% Add fitted parameters to already fixed parameters
 parametersbest = fixedparameters;
+startparam = parametersbest1; 
+if input.fitlocerror == 1
+    locerrorparameter = parametersbest1(end);
+    parametersbest1 = parametersbest1(1:end-1);
+else
+    locerrorparameter = NaN;
+end
+
 try
 parametersbest(indexfittingparameters) = parametersbest1;
 catch
 parametersbest(indexfittingparameters) = startparam; 
 sprintf('no parameters found')  
 end
-startparam = parametersbest1; 
+
 
 c = parametersbest(:,1);
 koff = parametersbest(:,2);
 kon = parametersbest(:,3);
 Dfree = parametersbest(:,4);
+
 if input.numberofspecies<3
 c(input.numberofspecies+1:end) = 0;
 end
@@ -166,126 +172,111 @@ parametersbest = parametersbest(1:numberofspecies,:);
 parametersbest(:,3) = parametersbest(:,2).*parametersbest(:,3);
 paramsize = size(parametersbest);
 
-
+%% Do bootstrapping
 if input.bootstrapping == true
-disp('Initialising Bootstrapping')
-AmountofSubsamples = input.numberofbootstraps;
-bootstrapparameters=zeros(paramsize(1),paramsize(2),AmountofSubsamples);
-for i = 1:AmountofSubsamples
-disp(['Running Bootstrap ' num2str(i) ' of ' num2str(AmountofSubsamples)])
-Dbootstrap = [];
-for j = input.frametimerange
-    for k = input.framerange
-index = Frametimelist == j & Numberofframes == k;
-Dlistdatatemp = Dlistdata(index);      
-randomindex = randi(numel(Dlistdatatemp),numel(Dlistdatatemp),1);
-Dbootstrap(index) = Dlistdatatemp(randomindex);
+    disp('Initialising Bootstrapping')
+    AmountofSubsamples = input.numberofbootstraps;
+    if input.fitlocerror == 1
+        paramsize(2) = paramsize(2)+1;
     end
-end
-[bootstraptemp] = mle(Dbootstrap, 'pdf',custompdf,'start',startparam,'LowerBound',lowerbound,'UpperBound',upperbound);
-
-bootstrapparametersbest = fixedparameters;
-bootstrapparametersbest(indexfittingparameters) = bootstraptemp;
-
-c = bootstrapparametersbest(:,1);
-% koff = bootstrapparametersbest(:,2);
-% kon = bootstrapparametersbest(:,3);
-% Dfree = bootstrapparametersbest(:,4);
-if input.numberofspecies<3
-c(input.numberofspecies+1:end) = 0;
-end
-c(1) = 1 - c(2) - c(3);
-bootstrapparametersbest(1,1) = c(1);
-
-% Dmean2 = c(2)* Dfree(2)*(1-kon(2)/(koff(2)+kon(2)));
-% Dmean3 = c(3)* Dfree(3)*(1-kon(3)/(koff(3)+kon(3)));
-% 
-% 
-% if fixedparameters(1,4) == 0 % If Dfree is not fixed
-% bootstrapparametersbest(1,4) = (meanD - locerror-max(Dmean2,0)-max(Dmean3,0))/(c(1)*(1-(kon(1)/(koff(1)+kon(1)))));
-% elseif fixedparameters(1,3) == 0 % If kon is not fixed
-%    a = 1-(meanD - locerror-max(Dmean2,0)-max(Dmean3,0))/(c(1)*Dfree(1));
-%     bootstrapparametersbest(1,3) = a*koff(1)/(1-a);
-% else 
-% end
-
-bootstrapparametersbest = bootstrapparametersbest(1:numberofspecies,:);
-%paramsize = size(bootstrapparametersbest);
-bootstrapparameters(:,:,i)=bootstrapparametersbest;
-
-end
-
-bootstrapparamstd = std(bootstrapparameters,0,3);
-bootstrapparammean = mean(bootstrapparameters,3);
+    bootstrapparameters=zeros(paramsize(1),paramsize(2),AmountofSubsamples);
+        
+    for i = 1:AmountofSubsamples
+        disp(['Running Bootstrap ' num2str(i) ' of ' num2str(AmountofSubsamples)])
+        Dbootstrap = [];
+        for j = input.frametimerange
+            for k = input.framerange
+                index = Frametimelist == j & Numberofframes == k;
+                Dlistdatatemp = Dlistdata(index);      
+                randomindex = randi(numel(Dlistdatatemp),numel(Dlistdatatemp),1);
+                Dbootstrap(index) = Dlistdatatemp(randomindex);
+            end
+        end
+        [bootstraptemp] = mle(Dbootstrap, 'pdf',custompdf,'start',startparam,'LowerBound',lowerbound,'UpperBound',upperbound);
+            
+        bootstrapparametersbest = fixedparameters;
+        
+        if input.fitlocerror ==1
+            bootlocerror = bootstraptemp(end);
+            bootstrapparametersbest(indexfittingparameters) = bootstraptemp(end-1);
+            bootstrapparametersbest(:,6) = bootlocerror;
+        else
+            bootstrapparametersbest(indexfittingparameters) = bootstraptemp;
+        end
+        c = bootstrapparametersbest(:,1);
+        if input.numberofspecies<3
+            c(input.numberofspecies+1:end) = 0;
+        end
+        c(1) = 1 - c(2) - c(3);
+        bootstrapparametersbest(1,1) = c(1);
+        bootstrapparametersbest = bootstrapparametersbest(1:numberofspecies,:);
+        bootstrapparameters(:,:,i)=bootstrapparametersbest;
+    end
+    bootstrapparamstd = std(bootstrapparameters,0,3);
+    bootstrapparammean = mean(bootstrapparameters,3);
 else
-paramsize = size(parametersbest);
-bootstrapparamstd = zeros(paramsize(1),paramsize(2));
-bootstrapparammean= parametersbest;
+    paramsize = size(parametersbest);
+    bootstrapparamstd = zeros(paramsize(1),paramsize(2));
+    bootstrapparammean= parametersbest;
 end
 
-function [output] = pdfDvaluesMLE(x, Numberofframes,Frametimelist,input,rangeD, fitspecies, fixedspecies, Dfixed,fixedparameters,indexfittingparameters,fx,fy,maxDindtracking,frequency,varargin)
+function [output] = pdfDvaluesMLE(x, Numberofframes,input, fixedparameters,indexfittingparameters,fx,fy,frequency,varargin)
 parameters = fixedparameters;
-try
-parameters(indexfittingparameters) = cell2mat(varargin{1});
-catch
-    keyboard
+
+if input.fitlocerror == 0
+    parameters(indexfittingparameters) = cell2mat(varargin{1});
+else 
+   param =  cell2mat(varargin{1});
+   parameters(indexfittingparameters) = param(1:end-1);
 end
+
 %% One degree of freedom less because meanD is linked to fonDNA and Dfree of all species
 c = parameters(:,1);
 koff = parameters(:,2);
-%koff = 10.^koff;
 kon = parameters(:,3).*koff;
-%Dfree = parameters(:,4);
 Dfree = max(parameters(:,4),parameters(:,5));
-%D1 = max(0,Dfree-parameters(:,5));
 D1 = min(parameters(:,4),parameters(:,5));
 if input.numberofspecies<3
 c(input.numberofspecies+1:end) = 0;
 end
 c(1) = 1 - c(2) - c(3);
-%% If one of the kinetic parameters is not fixed it can be directly calculated from the meanD 
-Dmean2 = c(2)* Dfree(2)*(1-kon(2)/(koff(2)+kon(2)));
-Dmean3 = c(3)* Dfree(3)*(1-kon(3)/(koff(3)+kon(3)));
-% if fixedparameters(1,4) == 0 % If Dfree is not fixed
-%      Dfree(1) = (meanD - locerror-max(Dmean2,0)-max(Dmean3,0))/(c(1)*(1-(kon(1)/(koff(1)+kon(1)))));
-% elseif fixedparameters(1,3) == 0 % If kon is not fixed
-%     a = 1-(meanD - locerror-max(Dmean2,0)-max(Dmean3,0))/(c(1)*Dfree(1));
-%     kon(1) = a*koff(1)/(1-a);
-% else 
-% end
 
-%% Used to be able to use the PDA/Stracy distribution together with MLE in MATLAB. Returns a probability for each point in the distribution.
+maxdata = max(x'.*Numberofframes)+1;
+maxrangeD = max(maxdata,-log(1e-22)*max(Dfree));
+rangeD =maxrangeD/(input.precision*2):maxrangeD/input.precision:maxrangeD;
 maxindex = numel(rangeD);
-% maxDfree = max(Dfree(fitspecies))+input.sigmaerror^2/min(input.frametimerange);
-% maxDfree = 10;
-% [~,maxindex] = min(abs(-log(maxDfree*1e-10)*maxDfree-rangeD));
 output = zeros(numel(Numberofframes),1);
 dataind = 1;
-for j = 1:numel(input.frametimerange)
-    input.frametime = input.frametimerange(j);
-    %locerrorpdf = input.dist(j).locerrorpdf(1:maxindex,:);
-    locerrorpdfcorrected = input.dist(j).locerrorpdfcorrected;
-    %locerrorpdfcorrected = locerrorpdfcorrected-locerrorpdf;
-    combinedpdf = zeros(maxindex,8); 
-for i = fitspecies
-    %[pdf]= DDistributiongenerator(koff(i),kon(i),Dfree(i),rangeD,locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,j);
-    [pdf]= DDistributiongenerator(koff(i),kon(i),Dfree(i),D1(i),rangeD,locerrorpdfcorrected,maxindex,fx,fy,maxDindtracking,input,j);
-    pdf = pdf./sum(pdf);
-    combinedpdf = combinedpdf + c(i)*pdf;
-end
-if ~isempty(fixedspecies)
-for i = fixedspecies    
-combinedpdf = combinedpdf + c(i)*Dfixed(i,j).dist';
-end
+
+%% Generate tracking window limit 
+if input.compensatetracking == true
+      maxD = (input.trackingwindow*input.pixelsize)^2/(4*input.frametime);
+      maxDindtracking = round(maxD./(rangeD(2)-rangeD(1)));
+else
+    maxDindtracking = 0;
 end
 
+%% Generation of distribution for each frame time
+for j = 1:numel(input.frametimerange)
+    input.frametime = input.frametimerange(j);
+    
+    if input.fitlocerror == 0
+        locerror = input.sigmaerror.^2/input.frametime;
+    else
+        locerror = param(end).^2/input.frametime;
+    end
+    
+    combinedpdf = zeros(maxindex,8); 
+    for i = 1:input.numberofspecies
+        [pdf]= DDistributiongenerator(koff(i),kon(i),Dfree(i),D1(i),rangeD,locerror,fx,fy,maxDindtracking,input,j);
+        pdf = pdf./sum(pdf);
+        combinedpdf = combinedpdf + c(i)*pdf;
+    end
+%% Interpolation of x data with found distribution for each track length
 for i = input.framerange
     numberofdata = frequency(j,i);
     ind = i*(x(dataind:dataind+numberofdata-1)-rangeD(1))/(rangeD(2)-rangeD(1))+1;
-    %rangeDx = rangeD(1):(rangeD(2)-rangeD(1))/i:max(rangeD);
-    %rangeDx = rangeDx(1:numel(combinedpdf(1:round(max(ind))+100,i)));
-    outputtemp = interp1(combinedpdf(1:round(max(ind))+100,i),ind,'spline');    
-    %outputtemp = interp1(rangeDx,combinedpdf(1:round(max(ind))+100,i),x(dataind:dataind+numberofdata-1),'spline');
+    outputtemp = interp1(combinedpdf(1:round(max(ind))+100,i),ind,'spline')./(rangeD(2)-rangeD(1));    
     output(dataind:dataind+numberofdata-1) = outputtemp;
     dataind = dataind+numberofdata;
 end
