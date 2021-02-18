@@ -3,10 +3,12 @@ fun2 = @(x) (x.^2-2).*sin(x)+2*x.*(cos(x));
 zerovalues = zeros(100,1);
 
 for i = 2:1:1000
-zerovalues(i-1) = fzero(fun2,i);
+  % Find roots at sign changes
+  if fun2(i-1) * fun2(i) < 0
+    zerovalues(i-1) = fzero(fun2,[i-1,i]);
+  end
 end
 
-zerovalues = uniquetol(zerovalues,1e-8);
 tau = r.^2./D;
 zerovalues = zerovalues(zerovalues>0);
 start = numel(zerovalues)+1;
