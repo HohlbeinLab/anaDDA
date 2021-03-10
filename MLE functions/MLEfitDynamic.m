@@ -1,4 +1,4 @@
-function [parametersbest,bootstrapparammean,bootstrapparamstd,locerrorparameter] = MLEfitDynamic(Dlistdata,input)
+function [parametersbest,bootstrapparammean,bootstrapparamstd,locerrorparameter,nllbest] = MLEfitDynamic(Dlistdata,input)
 %% Used to extract parameters based on MLE estimation. 
 % Can estimate parameters for up to three separate species, each with a koff, kon, Dfree (or D1 and D2) and abundance c. 
 % Each species adds 4 parameters to be estimated if not restricted. However
@@ -71,11 +71,12 @@ while pass == 0
     disp(['Running fitting cycle ' num2str(i) ' of at least ' num2str(mincyclenumber)])
     for j = 1:3
         koffstart(j) = 10^((log10(upperstartkoff)-log10(lowerstartkoff))*rand()+log10(lowerstartkoff));
-        konstart(j) = (upperstartkon-lowerstartkon)*rand+lowerstartkon;
-        konstart(j) = 10^(-1 + 2*rand());
+        %konstart(j) = (upperstartkon-lowerstartkon)*rand+lowerstartkon;
+        %konstart(j) = 10^(-1 + 2*rand());
+        konstart(j) = 10^((log10(upperstartkon)-log10(lowerstartkon))*rand()+log10(lowerstartkon));
         locerrorstart = lowerstartlocerror + (upperstartlocerror-lowerstartlocerror)*rand();
     end
-    startparameters = [rand koffstart(1) konstart(1) maxDfree*rand maxDfree*rand;rand koffstart(2) konstart(2)*koffstart(2) maxDfree*rand maxDfree*rand; rand koffstart(3) konstart(3)*koffstart(3) maxDfree*rand maxDfree*rand]; 
+    startparameters = [rand koffstart(1) konstart(1) maxDfree*rand maxDfree*rand;rand koffstart(2) konstart(2) maxDfree*rand maxDfree*rand; rand koffstart(3) konstart(3) maxDfree*rand maxDfree*rand]; 
     startparam = startparameters(indexfittingparameters);
     if input.fitlocerror == 1
         startparam = [startparam; locerrorstart];
