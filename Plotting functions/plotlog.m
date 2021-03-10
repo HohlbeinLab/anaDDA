@@ -1,7 +1,7 @@
 function plotlog(framenr,parameters,D, input,bootstrapparamstd,frametimerange,singlefigure,locerrorparameter)
 load(fullfile(fileparts(mfilename('fullpath')),'layoutparameters.mat'))
-maxDfree = max(parameters(:,4),parameters(:,5));
-maxrangeD = -log(1e-22)*maxDfree;
+Dfree = max(parameters(:,4),parameters(:,5));
+maxrangeD = -log(1e-22)*max(Dfree);
 rangeD =maxrangeD/(input.precision*2):maxrangeD/input.precision:maxrangeD;
 D = D(1,D(2,:)==framenr);
 logrange = 10.^(min(layoutparameters.range):0.01:max(layoutparameters.range));% Converted to x values
@@ -45,7 +45,7 @@ for ii = 1:size(parameters)
     framescombined = framescombined./sum(framescombined);
     framescombined = c*framescombined(:,framenr);
 
-    func = @(x) interp1(framescombined,x,'spline');
+    func = @(x) interp1(framescombined,x,'spline',0);
     lograngetrue = (logrange-rangeD(1))*framenr./(rangeD(3)-rangeD(2))+1;
     logpdf = framenr*logrange.*func(lograngetrue)/(0.44*(rangeD(3)-rangeD(2))/0.01);
     % for i = 1:numel(lograngetrue)-1
