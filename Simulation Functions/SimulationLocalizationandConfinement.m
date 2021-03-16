@@ -23,15 +23,6 @@ sigmaerror = input.sigmaerror;
 sigmasigma = 0;
 %immobilefraction = input.immobilefraction;% Set what percentage of signal is immobile
 
-koff1_A = koff1_A*Steptime;
-kon1_A = kon1_A*Steptime;
-koff2_A = koff2_A*Steptime;
-kon2_A = kon2_A*Steptime;
-
-koff1_B = koff1_B*Steptime;
-kon1_B = kon1_B*Steptime;
-koff2_B = koff2_B*Steptime;
-kon2_B = kon2_B*Steptime;
 confinement = input.confinement;
 NFrames = input.NumberofFrames;   % Number of frames
 Dim_A1 = input.D1_A; %has to be different value from Dim_A1, therefore very low
@@ -135,6 +126,25 @@ D(Cas8e_2==1,1)= Dfree_B;
 D(Cas8e_1==1,1)= Dim_B1;
 end
 
+% The simulation allows a particle to switch state once per step.
+% This is valid if the probability of switch is very low. 
+% When k < 1000 the switch probability at step time 1e-5 is < 1%.
+% Faster rates may require a smaller step time to avoid
+% missing dual switching in the same step.
+
+% A switch is determined using the cumulative probability of the
+% exponential function:
+% CDF = 1 - e^-kt with k the rate constant (^-s) and t the time (s).
+
+pon1_A = 1 - exp(-kon1_A*Steptime);
+pon2_A = exp(-kon2_A*Steptime); % 1 - (1 - exp(-kon2_A*Steptime)
+poff1_A = 1 - exp(-koff1_A*Steptime);
+poff2_A = 1 - exp(-koff2_A*Steptime);
+pon1_B = 1 - exp(-kon1_B*Steptime);
+pon2_B = exp(-kon2_B*Steptime); % 1 - (1 - exp(-kon2_B*Steptime)
+poff1_B = 1 - exp(-koff1_B*Steptime);
+poff2_B = 1 - exp(-koff2_B*Steptime);
+
 startD = D;
 ll = 1;
 while t < (runtime + (NFrames+0.6)*Frametime)    
@@ -144,10 +154,10 @@ if interchangingstate == true
 change = rand(Nparticles,1);
 
 % Change free to bound and bound to free depending on probability
-FreetoBound1 = (D==Dfree_A)&(change<kon1_A);
-FreetoBound2 = (D==Dfree_A)&(change>(1-kon2_A));
-BoundtoFree1 = (D ==Dim_A1)&(change<koff1_A);
-BoundtoFree2 = (D ==Dim_A2)&(change<koff2_A);
+FreetoBound1 = (D==Dfree_A)&(change<pon1_A);
+FreetoBound2 = (D==Dfree_A)&(change>pon2_A);
+BoundtoFree1 = (D ==Dim_A1)&(change<poff1_A);
+BoundtoFree2 = (D ==Dim_A2)&(change<poff2_A);
 
 % Change diffusion coefficients of those particles that changed states
 D(FreetoBound1) = Dim_A1;
@@ -156,10 +166,10 @@ D(BoundtoFree1) = Dfree_A;
 D(BoundtoFree2) = Dfree_A;
 
 if fractionB > 0
-FreetoBound1Cas8e = (D==Dfree_B)&(change<kon1_B);
-FreetoBound2Cas8e = (D==Dfree_B)&(change>(1-kon2_B));
-BoundtoFree1Cas8e = (D ==Dim_B1)&(change<koff1_B);
-BoundtoFree2Cas8e = (D ==Dim_B2)&(change<koff2_B);
+FreetoBound1Cas8e = (D==Dfree_B)&(change<pon1_B);
+FreetoBound2Cas8e = (D==Dfree_B)&(change>pon2_B);
+BoundtoFree1Cas8e = (D ==Dim_B1)&(change<poff1_B);
+BoundtoFree2Cas8e = (D ==Dim_B2)&(change<poff2_B);
 D(FreetoBound1Cas8e) = Dim_B1;
 D(FreetoBound2Cas8e) = Dim_B2;
 D(BoundtoFree1Cas8e) = Dfree_B;
