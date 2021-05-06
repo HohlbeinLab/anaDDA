@@ -14,10 +14,8 @@ input.lengthcell = 3;                                           % The length of 
 input.compensatetracking = true;                                % Whether tracking windows are taken in account in fitting data
 input.trackingwindow = 300;                                     % length of tracking window (um)
 input.fixedparameters = [1 -1 -1 -1 -1; -1 -1 -1 -1 0;-1 -1 -1 -1 0];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
-%JH added, replaces hardcoded ones in line 18 in MLEfitDynamic and uses
-%those if input.nofit = true (anaDDA line ~175)
-%fraction, koff, kon, Dfree and D1
-input.startparameters = [1 20 10 2 0.1; 0.3 1 1 4 1; 0.3 1 1 4 1];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
+%JH added (replaces hardcoded ones in line 2x in MLEfitDynamic
+input.startparameters = [1 -1 -1 -1 -1; -1 -1 -1 -1 0;-1 -1 -1 -1 0];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
 
 input.fitlocerror = 0;                                          % Decides whether localization error is fitted from data or supplied by user
 
