@@ -57,8 +57,8 @@ lowerstartkoff = input.lowerstartkoff;
 upperstartkoff = input.upperstartkoff;
 lowerstartlocerror = input.lowerstartlocerror;
 
-lowerstartkon = input.lowerstartkon;
-upperstartkon = input.upperstartkon;
+lowerstartkon = input.lowerstartratio;
+upperstartkon = input.upperstartratio;
 upperstartlocerror = input.upperstartlocerror;
 maxDfree = input.upperDfree;
 
