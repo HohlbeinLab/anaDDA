@@ -105,6 +105,9 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
     end    
 end
 
+
+
+
 %% For compatibility with older versions/input files
 if isfield(input,'fitlocerror')==0
 input.fitlocerror = 0;
@@ -168,7 +171,9 @@ input.rangex = rangex;
 if input.nofit == false
     [parameters, ~, bootstrapparamstd,locerrorparameter] = MLEfitDynamic(D,input);
 else
-    parameters = [1- input.fractionB input.koff1_A input.kon1_A input.Dfree_A input.D1_A; input.fractionB input.koff1_B input.kon1_B input.Dfree_B input.D1_B];
+    %JH changed
+    %parameters = [1- input.fractionB input.koff1_A input.kon1_A input.Dfree_A input.D1_A; input.fractionB input.koff1_B input.kon1_B input.Dfree_B input.D1_B];
+    parameters = input.startparameters;
     parameters = parameters(1:input.numberofspecies,:);
     bootstrapparamstd = zeros(size(parameters));
     locerrorparameter = input.sigmaerror;

@@ -8,16 +8,14 @@ function [input] = Generateinputfile
 input.numberofspecies = 1;                                      % Number of (non interacting) species you want to fit (max 3)
 input.upperDfree = 10;                                          % Upper estimate of Dfree (um2/s)
 input.sigmaerror = 0.03;                                        % Localization error used in both fitting and simulations(um) (only used if fitlocerror = 0)
-input.confinement = false;                                      % Whether confinement boundaries are taken in account in fitting data
+input.confinement = true;                                      % Whether confinement boundaries are taken in account in fitting data
 input.radiusofcell = 0.5;                                       % The radius of the spherical/rod-shaped cells/boundaries used for both fitting and simulations (um)
 input.lengthcell = 3;                                           % The length of the spherical/rod-shaped cells/boundaries used for both fitting and simulations (um)
 input.compensatetracking = true;                                % Whether tracking windows are taken in account in fitting data
 input.trackingwindow = 300;                                     % length of tracking window (um)
 input.fixedparameters = [1 -1 -1 -1 -1; -1 -1 -1 -1 0;-1 -1 -1 -1 0];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
-%JH added, replaces hardcoded ones in line 18 in MLEfitDynamic and uses
-%those if input.nofit = true (anaDDA line ~175)
-%fraction, koff, kon, Dfree and D1
-input.startparameters = [1 20 10 2 0.1; 0.3 1 1 4 1; 0.3 1 1 4 1];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
+%JH added (replaces hardcoded ones in line 2x in MLEfitDynamic
+input.startparameters = [1 -1 -1 -1 -1; -1 -1 -1 -1 0;-1 -1 -1 -1 0];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
 
 input.fitlocerror = 0;                                          % Decides whether localization error is fitted from data or supplied by user
 
@@ -25,10 +23,10 @@ input.fitlocerror = 0;                                          % Decides whethe
 input.bootstrapping = true;                                     % If you want to include bootstrapping for std dev estimations
 input.numberofbootstraps = 4;                                   % Number of bootstraps %standard 8
 input.cyclenumber = 4;                                          % Minimum amount of rounds of MLE before comparing parameter outputs and potential termination
-input.lowerstartkoff = 0.5;                                     % Lower bound of koff estimate in MLE optimization (s-1)
+input.lowerstartkoff = 0.5;                                    % Lower bound of koff estimate in MLE optimization (s-1)
 input.upperstartkoff = 1000;                                    % Upper bound of koff estimate in MLE optimization (s-1)
-input.lowerstartratio = 0.1;                                    % Lower bound of kon estimate in MLE optimization (represented as fraction of koff) 
-input.upperstartratio = 10;                                     % Upper bound of kon estimate in MLE optimization (represented as fraction of koff) 
+input.lowerstartkon = 0.5;                                      % Lower bound of kon estimate in MLE optimization (represented as fraction of koff) 
+input.upperstartkon = 1000;                                       % Upper bound of kon estimate in MLE optimization (represented as fraction of koff) 
 input.lowerstartlocerror = 0.02;                                % Lower bound of loc error estimate in MLE optimization (um)
 input.upperstartlocerror = 0.05;                                % Upper bound of loc error estimate in MLE optimization (um)
 input.precision = 2^16;                                         % Number of points in distribution for which anaDDA calculates likelihood directly (instead of interpolation; multitude of 2 is most optimal for fft convolution)

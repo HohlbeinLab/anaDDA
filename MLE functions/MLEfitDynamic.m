@@ -15,7 +15,9 @@ indexfittingparameters = [indexfittingparameters; zeros(3-numberofspecies,5)];
 indexfittingparameters = logical(indexfittingparameters);
 
 % Initialise starting parameters and lower bound and upperbound
-startparameters = [0.3 50 30 4 1;0.3 1 1 4 1; 0.3 1 1 4 1]; 
+%startparameters = [0.3 50 30 4 1;0.3 1 1 4 1; 0.3 1 1 4 1]; 
+%JH added
+startparameters = input.startparameters;
 startparam = startparameters(indexfittingparameters);
 lowerbound = zeros(length(startparam),1)+0.000001;
 upperbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);input.upperstartkon*input.upperstartkoff*ones(sum(sum(indexfittingparameters(:,2:3)==1)),1);input.upperDfree*ones(sum(indexfittingparameters(:,4)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,5)==1),1)];
