@@ -11,13 +11,19 @@ function [locerrorpdf,locerrorpdfcorrected,rangex,locdist,rangefit] = makelocerr
 % locerrorpdfcorrected: the corrected distribution
 % Created 07-08-2019 by Jochem Vink
 
+filepath = mfilename('fullpath');
+filepath = fileparts(filepath);
+filepath = filepath(1:48);
+filename_temp = fullfile(filepath, 'locdisttable.mat');
+load(filename_temp) % Load pregenerated correlation localization distributions
+
 %maxcalculatedD = 2;
 Dsigmaerror = input.sigmaerror^2/min(input.frametimerange);
 maxcalculatedD =  -log(1e-10)*Dsigmaerror;
 maxrange = numel(rangeD(1)/max(input.framerange):((rangeD(2)-rangeD(1))/max(input.framerange)):max(rangeD(:)));
 locerrorpdf = zeros(maxrange,8);
 locerrorpdfcorrected = zeros(maxrange,8);
-load('C:\Users\joche\Desktop\anaDDA\locdisttable.mat')
+%load('C:\Users\joche\Desktop\anaDDA\locdisttable.mat')
 input.locdist = locdist; 
 input.rangex = rangex;
 %[rangex,trial] = generatePhi2;
