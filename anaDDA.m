@@ -184,7 +184,7 @@ end
 %% Plotting functions and calculation of KSSTAT
 if numel(input.framerange) == 8 && input.plotlog == true
     f = figure;
-    f.WindowState = 'maximized';
+%    f.WindowState = 'maximized';
 end
 
 for i = 1:numel(input.frametimerange)
@@ -200,7 +200,7 @@ for i = 1:numel(input.frametimerange)
              subplot(4,2,j,'Parent',f)
              title(['D distribution for track length ' num2str(j) ' steps'])
             hold on
-            plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input,bootstrapparamstd,1,false,locerrorparameter)
+            plotlog(framenr,parameters,D(:,D(3,:)==input.frametime), input, bootstrapparamstd,1,false,locerrorparameter)
          else
             figure
             title(['D distribution for track length ' num2str(j) ' steps'])

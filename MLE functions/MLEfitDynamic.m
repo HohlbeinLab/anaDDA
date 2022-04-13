@@ -20,7 +20,9 @@ indexfittingparameters = logical(indexfittingparameters);
 startparameters = input.startparameters;
 startparam = startparameters(indexfittingparameters);
 lowerbound = zeros(length(startparam),1)+0.000001;
-upperbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);input.upperstartkon*input.upperstartkoff*ones(sum(sum(indexfittingparameters(:,2:3)==1)),1);input.upperDfree*ones(sum(indexfittingparameters(:,4)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,5)==1),1)];
+%JH: 07.04.2022
+%upperbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);input.upperstartkon*input.upperstartkoff*ones(sum(sum(indexfittingparameters(:,2:3)==1)),1);input.upperDfree*ones(sum(indexfittingparameters(:,4)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,5)==1),1)];
+upperbound = [ones(sum(fixedparameterstemp(:,1)==-1),1);input.upperstartratio*input.upperstartkoff*ones(sum(sum(indexfittingparameters(:,2:3)==1)),1);input.upperDfree*ones(sum(indexfittingparameters(:,4)==1),1);input.upperDfree*ones(sum(indexfittingparameters(:,5)==1),1)];
 
 %% Make lists to keep track what measurement and track length D values come from
 Frametimelist = Dlistdata(3,:);
