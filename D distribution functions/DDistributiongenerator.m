@@ -230,6 +230,8 @@ Dy2 = polyfunc(Dfree.*(1-t1)+D1.*t1,fy)+locerror;
 
 dist= (1./sqrt(Dx)).*(1./sqrt(Dy)).*exp((-(1./Dx)-(1./Dy)).*x/2).*besseli0_fast(((1./Dx)-(1./Dy)).*x/2);
 dist2= (1./sqrt(Dx2)).*(1./sqrt(Dy2)).*exp((-(1./Dx2)-(1./Dy2)).*x/2).*besseli0_fast(((1./Dx2)-(1./Dy2)).*x/2);
+dist(isnan(dist))=0;
+dist2(isnan(dist2))=0;
 evenconstant = sqrt(koff*kon.*(1-t1)./(t1)).*besseli(1,2*sqrt(kon*koff.*t1.*(1-t1)));
 
 output(:,1) = dist.*kon.*exp(-kon.*t1-koff.*(1-t1)).*besseli(0,2*sqrt(kon*koff.*t1.*(1-t1)));
