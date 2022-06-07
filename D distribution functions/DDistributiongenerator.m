@@ -8,8 +8,8 @@ interval = (log(rangeD(end))-log(rangeD(1)))/input.integrationinterval;
 x = exp(log(rangeD(1))-2*interval:interval:log(rangeD(end))+2*interval);
 x = x';
 if input.confinement == 1
-    polyfunc = @(x,test) test(9).*x+test(8).*x.^2+test(7).*x.^3+test(6).*x.^4+test(5).*x.^5+test(4).*x.^6+test(3).*x.^7+test(2).*x.^8+test(1).*x.^9+test(10);
-    func = @(t1) Integralconfined(t1,Dfree,locerror,koff,kon,fx(:,indexframetimerange),fy(:,indexframetimerange),x,polyfunc);
+    polyfunc = @(x,test) test(9).*x+test(8).*x.^2+test(7).*x.^3+test(6).*x.^4+test(5).*x.^5+test(4).*x.^6+test(3).*x.^7+test(2).*x.^8+test(1).*x.^9;
+    func = @(t1) Integralconfined(t1,Dfree,D1,locerror,koff,kon,fx(:,indexframetimerange),fy(:,indexframetimerange),x,polyfunc);
     pdfarray = integral(func,0,1,'ArrayValued',true);
 else
     func = @(t1) Integral(t1,Dfree,D1,koff,kon,x,locerror);
@@ -184,20 +184,22 @@ framerange = 2:8;
 %allframes = allframes(1:maxindex,:);%./sum(allframes); 
 rangex = input.rangex;
 locdist = input.locdist;
-conversion = locerror*(rangex(2,2)-rangex(1,2))/(2*(rangeD(2)-rangeD(1)));
-maxindexloc = find(rangeD/locerror>max(rangex(:)),1)-1;
-for i = 8:-1:2
-    %corrected(1:maxindexloc,i)=interp1(rangex(:,i),locdist(:,i),rangeD(1:maxindexloc)/locerror')/(conversion*i);
-    corrected(1:maxindexloc,i)=locdist{i}(rangeD(1:maxindexloc)/locerror')/(conversion*i);
-end
-corrected(isnan(corrected))=0;
-locerrorpdf = gammapdf(rangeD(1:length(corrected))',2:8,(D1+locerror)).*(rangeD(2)-rangeD(1));
-locerrorpdf(corrected(:,2:8)==0)=0;
-locerrorpdfcorrected = corrected(:,2:8)-locerrorpdf;
-%% Localization error is slightly differently distributed. This takes this into account by changing distribution 
-probstationary = probS1*(exp(-koff*framerange*frametime));
-if D1 == 0
-    allframes(1:length(corrected),2:8) = allframes(1:length(corrected),2:8)+probstationary.*locerrorpdfcorrected;
+if locerror>0
+    conversion = locerror*(rangex(2,2)-rangex(1,2))/(2*(rangeD(2)-rangeD(1)));
+    maxindexloc = find(rangeD/locerror>max(rangex(:)),1)-1;
+    for i = 8:-1:2
+        %corrected(1:maxindexloc,i)=interp1(rangex(:,i),locdist(:,i),rangeD(1:maxindexloc)/locerror')/(conversion*i);
+        corrected(1:maxindexloc,i)=locdist{i}(rangeD(1:maxindexloc)/locerror')/(conversion*i);
+    end
+    corrected(isnan(corrected))=0;
+    locerrorpdf = gammapdf(rangeD(1:length(corrected))',2:8,(D1+locerror)).*(rangeD(2)-rangeD(1));
+    locerrorpdf(corrected(:,2:8)==0)=0;
+    locerrorpdfcorrected = corrected(:,2:8)-locerrorpdf;
+    %% Localization error is slightly differently distributed. This takes this into account by changing distribution 
+    probstationary = probS1*(exp(-koff*framerange*frametime));
+    if D1 == 0
+        allframes(1:length(corrected),2:8) = allframes(1:length(corrected),2:8)+probstationary.*locerrorpdfcorrected;
+    end
 end
 allframes(maxindex+1:numel(rangeD),:)=1e-25;
 
@@ -216,11 +218,11 @@ output = [output 1/((1-t1).*Dfree+t1.*D1+locerror)*exp(-x./((1-t1).*Dfree+t1.*D1
 % funceven = @(t1) 1/(t1.*Dfree+locerror)*exp(-x./(t1.*Dfree+locerror)).*sqrt(koff*kon.*(1-t1)./(t1)).*exp(-kon.*t1-koff.*(1-t1)).*besseli(1,2*sqrt(kon*koff.*t1.*(1-t1)));
 % funceven2 = @(t1) 1/((1-t1).*Dfree+locerror)*exp(-x./((1-t1).*Dfree+locerror)).*sqrt(koff*kon.*(1-t1)./(t1)).*exp(-koff.*t1-kon.*(1-t1)).*besseli(1,2*sqrt(kon*koff.*t1.*(1-t1)));
 
-function [output] = Integralconfined(t1,Dfree,locerror,koff,kon,fx,fy,x,polyfunc)
-Dx = polyfunc(Dfree.*t1,fx)+locerror;
-Dy = polyfunc(Dfree.*t1,fy)+locerror;
-Dx2 = polyfunc(Dfree.*(1-t1),fx)+locerror;
-Dy2 = polyfunc(Dfree.*(1-t1),fy)+locerror;
+function [output] = Integralconfined(t1,Dfree,D1,locerror,koff,kon,fx,fy,x,polyfunc)
+Dx = polyfunc(Dfree.*t1+D1.*(1-t1),fx)+locerror;
+Dy = polyfunc(Dfree.*t1+D1.*(1-t1),fy)+locerror;
+Dx2 = polyfunc(Dfree.*(1-t1)+D1.*t1,fx)+locerror;
+Dy2 = polyfunc(Dfree.*(1-t1)+D1.*t1,fy)+locerror;
 % Dx = fx(Dfree.*t1);
 % Dy = fy(Dfree.*t1);
 % Dx2 = fx(Dfree.*(1-t1));

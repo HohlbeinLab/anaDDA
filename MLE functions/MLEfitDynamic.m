@@ -109,9 +109,9 @@ while pass == 0
         parameterssecondbest = totalparam(:,secondbestrun(1));
         if any(abs(parametersbest./parameterssecondbest-1)>0.05)
             pass = 0;
-            if i > 20*mincyclenumber
+            if i > 5*mincyclenumber
                 pass = 1;
-                warning('Passed without convergence because reached max cycle number (20 times min cycle number)')
+                warning('Passed without convergence because reached max cycle number (5 times min cycle number)')
             end
         else
             pass = 1;

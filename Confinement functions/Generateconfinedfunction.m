@@ -74,8 +74,8 @@ end
 % pdfarray = single(pdfarray);
 % pdfarray = gpuArray(pdfarray);
 warning('off','MATLAB:polyfit:RepeatedPointsOrRescale')
-fx = polyfit(rangeDPDA(2:end)',Dx(2:end)',9);
-fy = polyfit(rangeDPDA(2:end)',Dy(2:end)',9);
+fx = polyfit([0;rangeDPDA(2:end)'],[0;Dx(2:end)'],9);
+fy = polyfit([0;rangeDPDA(2:end)'],[0;Dy(2:end)'],9);
 % fx = fit(rangeDPDA(2:end)',Dx(2:end)','poly9');
 % fy = fit(rangeDPDA(2:end)',Dy(2:end)','poly9');
 % fx = fit(rangeDPDA',Dx','smoothingspline');
