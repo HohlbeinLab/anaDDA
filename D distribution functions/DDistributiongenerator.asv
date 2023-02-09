@@ -62,9 +62,7 @@ if maxDindtracking > 0
     pdfarray(maxDindtracking+1:end,:) = 0;
 end
 
-%% JV_added 10-02-2023 Temp solution to fix with high D in small confinements that generates infinite bessel values
 pdfarray(isnan(pdfarray))=1e-22;
-pdfarray(isinf(pdfarray))=1e-22;
 
 pdfarrayS2S1 = pdfarray(:,1);
 pdfarrayS1S1 = pdfarray(:,2);

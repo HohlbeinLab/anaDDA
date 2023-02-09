@@ -24,8 +24,8 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
     input = Generateinputfile;  %calls function
     opts.Interpreter = 'tex';
     answers = inputdlg({'(1) How many species do you want to fit?',... %JH could be also non-interconverting?!
-        '(2) What is the maximum expected diffusion coefficient \it{D} \rm(µm^2/s)?',...
-        '(3) What is the estimated localization error in your measurement (µm) (-1 if no estimate)?',...
+        '(2) What is the maximum expected diffusion coefficient \it{D} \rm(Âµm^2/s)?',...
+        '(3) What is the estimated localization error in your measurement (Âµm) (-1 if no estimate)?',...
         '(4) Are there any (spherical/rod-shaped) confinement boundaries (y/n)?',...
         '(5) Are there any maximum tracking windows applied (y/n)?',...
         '(6) Is one of the transitioning states immobile (y/n)?',...
@@ -44,7 +44,7 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
     
     if answers{4} == 'y'
         input.confinement = 1;
-        answersconfinement = inputdlg({'What is the radius of confinement (µm)?',...
+        answersconfinement = inputdlg({'What is the radius of confinement (Âµm)?',...
             'What is the length of confinement (if cell is spherical then same as above)?'},...
             'Input confinement',1,{'0.5','3'}, opts);
         input.radiusofcell = str2num(answersconfinement{1});
@@ -58,7 +58,7 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
     end
     if answers{5} == 'y'
         input.compensatetracking = 1;
-        answertrack = inputdlg('What is the length of the tracking window (µm)?',...
+        answertrack = inputdlg('What is the length of the tracking window (Âµm)?',...
             'Input tracking window',1,{'1'});
         input.trackingwindow = str2num(answertrack{1}); 
     else
@@ -75,7 +75,7 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
         if twomobilestates == 0
             for i = 1:input.numberofspecies
                 answerfixspecies1 = inputdlg(['Confinment parameters species ' num2str(i) ...
-                    ' (fraction koff (s^-1) kon (s^-1) Dfree (µm^2/s)); (-1 if not fixed)?'] ,...
+                    ' (fraction koff (s^-1) kon (s^-1) Dfree (Âµm^2/s)); (-1 if not fixed)?'] ,...
                     ['Input fixed parameters species ' num2str(i)],1,{'-1 20 20 4'});
                 input.fixedparameters(i,:) = [str2num(answerfixspecies1{1}) 0];
                 if input.fixedparameters(i,4) == 0
@@ -88,7 +88,7 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
         else
             for i = 1:input.numberofspecies
                 answerfixspecies1 = inputdlg(['Confinment parameters species ' num2str(i) ...
-                    ' (fraction koff (s^-1) kon (s^-1) D1 (µm^2/s) D2 (µm^2/s)); (-1 if not fixed)?'] ,...
+                    ' (fraction koff (s^-1) kon (s^-1) D1 (Âµm^2/s) D2 (Âµm^2/s)); (-1 if not fixed)?'] ,...
                     ['Input fixed parameters species ' num2str(i)],1,{'-1 20 20 0.5 4'});
                 input.fixedparameters(i,:) = str2num(answerfixspecies1{1});
                 
@@ -168,21 +168,16 @@ input.rangex = rangex;
 %% Fitting of data with MLE and bootstrapping
 % If input.nofit = true, it skips the MLE and immediately plots the data
 % with the supplied parameters in the input file
-if sum(input.fixedparameters(1:input.numberofspecies,2:end)==-1)>0||sum(input.fixedparameters(1:input.numberofspecies,1)==-1)>1
-    input.nofit = false;
-else
-    input.nofit = true;
-end
+if sum(input.fixedparameters(1:input.numberofspecies,2:end)==-1) | 
+    
+
 
 if input.nofit == false
     [parameters, ~, bootstrapparamstd,locerrorparameter] = MLEfitDynamic(D,input);
 else
     %JH changed
     %parameters = [1- input.fractionB input.koff1_A input.kon1_A input.Dfree_A input.D1_A; input.fractionB input.koff1_B input.kon1_B input.Dfree_B input.D1_B];
-    parameters = input.fixedparameters;
-    if input.numberofspecies == 1
-        parameters(1,1) = 1;
-    end
+    parameters = input.startparameters;
     parameters = parameters(1:input.numberofspecies,:);
     bootstrapparamstd = zeros(size(parameters));
     locerrorparameter = input.sigmaerror;

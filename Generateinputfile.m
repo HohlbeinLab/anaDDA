@@ -17,7 +17,7 @@ input.fixedparameters = [1 -1 -1 -1 -1; -1 -1 -1 -1 0;-1 -1 -1 -1 0];  % Fixed p
 %JH added, replaces hardcoded ones in line 18 in MLEfitDynamic and uses
 %those if input.nofit = true (anaDDA line ~175)
 %fraction, koff, kon, Dfree and D1
-input.startparameters = [1 20 10 2 0.1; 0.3 1 1 4 1; 0.3 1 1 4 1];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
+%input.startparameters = [1 20 10 2 0.1; 0.3 1 1 4 1; 0.3 1 1 4 1];  % Fixed parameters for fitting. Each row is a species, the columns are fraction, koff, kon, Dfree and D1. -1 if not fixed(Default: [1 -1 -1 -1 0; -1 -1 -1 -1 0;-1 -1 -1 -1 0];)
 
 input.fitlocerror = 0;                                          % Decides whether localization error is fitted from data or supplied by user
 
@@ -31,7 +31,7 @@ input.lowerstartratio = 0.1;                                    % Lower bound of
 input.upperstartratio = 10;                                     % Upper bound of kon estimate in MLE optimization (represented as fraction of koff) 
 input.lowerstartlocerror = 0.02;                                % Lower bound of loc error estimate in MLE optimization (um)
 input.upperstartlocerror = 0.05;                                % Upper bound of loc error estimate in MLE optimization (um)
-input.precision = 2^16;                                         % Number of points in distribution for which anaDDA calculates likelihood directly (instead of interpolation; multitude of 2 is most optimal for fft convolution)
+input.precision = 2^20;                                         % Number of points in distribution for which anaDDA calculates likelihood directly (instead of interpolation; multitude of 2 is most optimal for fft convolution)
 input.nofit = false;                                            % Whether fitting algorithm is used (false) or directly use input parameters from simulation to calculate distribution (true) 
 input.plotlog = true;                                           % Whether plots are being generated (true)
 input.KSstats = true;                                           % Whether Kolmogorov Smirnov test statistic is calculated (true)
