@@ -13,7 +13,7 @@ histogram(log10(D), histrange,'Normalization','probability','Facecolor', layoutp
 totallogpdf = zeros(numel(logrange)-1,1);
 
 if input.confinement==true
-    [fx,fy] = Generateconfinedfunction(0:0.01:max(Dfree),input);
+    [fx,fy] = Generateconfinedfunction(0:0.05:5,input);
     fx = fx';
     fy = fy';
 else

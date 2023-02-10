@@ -32,7 +32,7 @@ pdfarray = pdfarray.*(rangeD(2)-rangeD(1));
 % allframes = [allframesprecise; interp1(rangeDfast,allframes,rangeDinterp)/10];
 
 pdfarray = interp1(x,pdfarray,rangeD,'spline');
-pdfarray(pdfarray<0)=min(abs(pdfarray(:)));
+
 allframes = convolutedistributions(koff,kon,Dfree,D1,locerror,pdfarray,rangeD,fx,fy,maxDindtracking,input,indexframetimerange,polyfunc);
 
 function allframes = convolutedistributions(koff,kon,Dfree,D1,locerror,pdfarray,rangeD,fx,fy,maxDindtracking,input,indexframetimerange,polyfunc)
@@ -62,9 +62,6 @@ if maxDindtracking > 0
     pdfarray(maxDindtracking+1:end,:) = 0;
 end
 
-%% JV_added 10-02-2023 Temp solution to fix with high D in small confinements that generates infinite bessel values
-pdfarray(isnan(pdfarray))=1e-22;
-pdfarray(isinf(pdfarray))=1e-22;
 
 pdfarrayS2S1 = pdfarray(:,1);
 pdfarrayS1S1 = pdfarray(:,2);

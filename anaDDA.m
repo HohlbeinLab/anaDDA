@@ -77,7 +77,7 @@ if ~(exist('input') == 1)         % Checks if users already supply an input file
                 answerfixspecies1 = inputdlg(['Confinment parameters species ' num2str(i) ...
                     ' (fraction koff (s^-1) kon (s^-1) Dfree (µm^2/s)); (-1 if not fixed)?'] ,...
                     ['Input fixed parameters species ' num2str(i)],1,{'-1 20 20 4'});
-                input.fixedparameters(i,:) = [str2num(answerfixspecies1{1}) 0];
+                input.fixedparameters(i,:) = str2num(answerfixspecies1{1});
                 if input.fixedparameters(i,4) == 0
                     input.fixedparameters(i,2) = 0.00001;
                     input.fixedparameters(i,3) = 100000;
@@ -168,21 +168,12 @@ input.rangex = rangex;
 %% Fitting of data with MLE and bootstrapping
 % If input.nofit = true, it skips the MLE and immediately plots the data
 % with the supplied parameters in the input file
-if sum(input.fixedparameters(1:input.numberofspecies,2:end)==-1)>0||sum(input.fixedparameters(1:input.numberofspecies,1)==-1)>1
-    input.nofit = false;
-else
-    input.nofit = true;
-end
-
 if input.nofit == false
     [parameters, ~, bootstrapparamstd,locerrorparameter] = MLEfitDynamic(D,input);
 else
     %JH changed
     %parameters = [1- input.fractionB input.koff1_A input.kon1_A input.Dfree_A input.D1_A; input.fractionB input.koff1_B input.kon1_B input.Dfree_B input.D1_B];
-    parameters = input.fixedparameters;
-    if input.numberofspecies == 1
-        parameters(1,1) = 1;
-    end
+    parameters = input.startparameters;
     parameters = parameters(1:input.numberofspecies,:);
     bootstrapparamstd = zeros(size(parameters));
     locerrorparameter = input.sigmaerror;

@@ -20,7 +20,7 @@ MSDx = a-b*c;
 Dx = MSDx./(2*t);
 fun = @(x) 0.5*(besselj(0,x)-besselj(2,x));
 
-for i = 1:1000
+for i = 1:100
 zerovalues(i) = fzero(fun,i);
 end
 
